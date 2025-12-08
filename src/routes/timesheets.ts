@@ -137,16 +137,6 @@ timesheets.post('/', async (c) => {
     // Calcula início da semana
     const weekStart = getWeekStartDate(body.entry_date);
     
-    // Verifica se já existe lançamento
-    const existing = await db.prepare(`
-      SELECT * FROM timesheet_entries 
-      WHERE user_id = ? AND project_id = ? AND activity_id = ? AND entry_date = ?
-    `).bind(user.userId, body.project_id, body.activity_id, body.entry_date).first();
-    
-    if (existing) {
-      return errorResponse(c, 'Já existe um lançamento para esta data, projeto e atividade');
-    }
-    
     // Verifica total de horas do dia
     const dayTotal = await db.prepare(`
       SELECT SUM(hours) as total FROM timesheet_entries 
