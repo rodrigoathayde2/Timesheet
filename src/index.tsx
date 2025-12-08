@@ -7,6 +7,8 @@ import type { Bindings } from './types';
 import auth from './routes/auth';
 import users from './routes/users';
 import projects from './routes/projects';
+import activities from './routes/activities';
+import timesheets from './routes/timesheets';
 
 // Import middleware
 import { authMiddleware } from './middleware/auth';
@@ -35,6 +37,8 @@ app.use('/api/*', async (c, next) => {
 // Rotas protegidas
 app.route('/api/users', users);
 app.route('/api/projects', projects);
+app.route('/api/activities', activities);
+app.route('/api/timesheets', timesheets);
 
 // Página principal
 app.get('/', (c) => {
@@ -53,6 +57,7 @@ app.get('/', (c) => {
         
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script src="/static/app.js"></script>
+        <script src="/static/timesheet-app.js"></script>
     </body>
     </html>
   `);

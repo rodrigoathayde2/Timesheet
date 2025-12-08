@@ -258,13 +258,13 @@ function getDashboardHTML() {
         <!-- Funcionalidades -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           ${user.role === 'COLABORADOR' ? `
-            <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition cursor-pointer">
+            <div onclick="renderTimesheetView()" class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition cursor-pointer">
               <i class="fas fa-plus-circle text-4xl text-blue-600 mb-3"></i>
               <h3 class="text-lg font-bold text-gray-800 mb-2">Lançar Horas</h3>
               <p class="text-sm text-gray-600">Registre suas horas trabalhadas</p>
             </div>
             
-            <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition cursor-pointer">
+            <div onclick="renderTimesheetView()" class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition cursor-pointer">
               <i class="fas fa-calendar-check text-4xl text-green-600 mb-3"></i>
               <h3 class="text-lg font-bold text-gray-800 mb-2">Minhas Semanas</h3>
               <p class="text-sm text-gray-600">Visualize e envie timesheets</p>
@@ -273,18 +273,18 @@ function getDashboardHTML() {
             <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition cursor-pointer">
               <i class="fas fa-chart-line text-4xl text-purple-600 mb-3"></i>
               <h3 class="text-lg font-bold text-gray-800 mb-2">Meus Relatórios</h3>
-              <p class="text-sm text-gray-600">Histórico e análises</p>
+              <p class="text-sm text-gray-600">Histórico e análises (em breve)</p>
             </div>
           ` : ''}
           
           ${user.role === 'GESTOR' ? `
-            <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition cursor-pointer">
-              <i class="fas fa-users-cog text-4xl text-blue-600 mb-3"></i>
-              <h3 class="text-lg font-bold text-gray-800 mb-2">Minha Equipe</h3>
-              <p class="text-sm text-gray-600">Gerencie sua equipe</p>
+            <div onclick="renderTimesheetView()" class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition cursor-pointer">
+              <i class="fas fa-plus-circle text-4xl text-blue-600 mb-3"></i>
+              <h3 class="text-lg font-bold text-gray-800 mb-2">Lançar Horas</h3>
+              <p class="text-sm text-gray-600">Registre suas horas</p>
             </div>
             
-            <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition cursor-pointer">
+            <div onclick="renderApprovalsView()" class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition cursor-pointer">
               <i class="fas fa-check-circle text-4xl text-green-600 mb-3"></i>
               <h3 class="text-lg font-bold text-gray-800 mb-2">Aprovar Timesheets</h3>
               <p class="text-sm text-gray-600">Aprove horas dos colaboradores</p>
@@ -293,7 +293,7 @@ function getDashboardHTML() {
             <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition cursor-pointer">
               <i class="fas fa-chart-pie text-4xl text-purple-600 mb-3"></i>
               <h3 class="text-lg font-bold text-gray-800 mb-2">Dashboard Gerencial</h3>
-              <p class="text-sm text-gray-600">Análises da equipe</p>
+              <p class="text-sm text-gray-600">Análises da equipe (em breve)</p>
             </div>
           ` : ''}
           
