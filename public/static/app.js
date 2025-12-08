@@ -351,40 +351,56 @@ function setupDashboardHandlers() {
 
 async function loadDashboardData() {
   try {
-    // Simular dados iniciais
-    document.getElementById('weekHours').textContent = '8.00h';
-    document.getElementById('monthHours').textContent = '40.00h';
-    document.getElementById('pendingItems').textContent = '0';
+    // Carregar stats reais do backend
+    const response = await axios.get('/dashboard/stats');
+    const stats = response.data.data;
     
+    // Atualizar cards
+    document.getElementById('weekHours').textContent = `${stats.total_hours_week.toFixed(2)}h`;
+    document.getElementById('monthHours').textContent = `${stats.total_hours_month.toFixed(2)}h`;
+    document.getElementById('pendingItems').textContent = stats.pending_approvals;
+    
+    const user = app.currentUser;
+    if (user.role === 'COLABORADOR') {
+      document.getElementById('pendingText').textContent = 'Semanas pendentes';
+    } else {
+      document.getElementById('pendingText').textContent = 'Timesheets para aprovar';
+    }
+    
+    // Atualizar resumo de status
     const statusSummary = `
       <div class="text-center p-3 bg-gray-100 rounded">
-        <p class="text-2xl font-bold text-gray-600">2</p>
+        <p class="text-2xl font-bold text-gray-600">${stats.status_summary.rascunho || 0}</p>
         <p class="text-xs text-gray-600">Rascunho</p>
       </div>
       <div class="text-center p-3 bg-yellow-100 rounded">
-        <p class="text-2xl font-bold text-yellow-600">1</p>
+        <p class="text-2xl font-bold text-yellow-600">${stats.status_summary.enviado || 0}</p>
         <p class="text-xs text-gray-600">Enviado</p>
       </div>
       <div class="text-center p-3 bg-green-100 rounded">
-        <p class="text-2xl font-bold text-green-600">7</p>
-        <p class="text-xs text-gray-600">Aprovado</p>
+        <p class="text-2xl font-bold text-green-600">${stats.status_summary.aprovado_gestor || 0}</p>
+        <p class="text-xs text-gray-600">Aprov. Gestor</p>
       </div>
       <div class="text-center p-3 bg-red-100 rounded">
-        <p class="text-2xl font-bold text-red-600">0</p>
+        <p class="text-2xl font-bold text-red-600">${stats.status_summary.reprovado_gestor || 0}</p>
         <p class="text-xs text-gray-600">Reprovado</p>
       </div>
       <div class="text-center p-3 bg-blue-100 rounded">
-        <p class="text-2xl font-bold text-blue-600">5</p>
-        <p class="text-xs text-gray-600">Aprov. Gestor</p>
+        <p class="text-2xl font-bold text-blue-600">${stats.status_summary.aprovado_diretor || 0}</p>
+        <p class="text-xs text-gray-600">Aprov. Diretor</p>
       </div>
       <div class="text-center p-3 bg-purple-100 rounded">
-        <p class="text-2xl font-bold text-purple-600">3</p>
-        <p class="text-xs text-gray-600">Aprov. Diretor</p>
+        <p class="text-2xl font-bold text-purple-600">${stats.status_summary.reprovado_diretor || 0}</p>
+        <p class="text-xs text-gray-600">Repr. Diretor</p>
       </div>
     `;
     document.getElementById('statusSummary').innerHTML = statusSummary;
   } catch (error) {
     console.error('Erro ao carregar dados:', error);
+    // Manter valores padrão em caso de erro
+    document.getElementById('weekHours').textContent = '0.00h';
+    document.getElementById('monthHours').textContent = '0.00h';
+    document.getElementById('pendingItems').textContent = '0';
   }
 }
 

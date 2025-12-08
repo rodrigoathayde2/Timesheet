@@ -86,7 +86,18 @@ async function renderTimesheetView() {
           </div>
           
           <!-- Ações -->
-          <div class="mt-6 flex gap-3 justify-end">
+          <div class="mt-6 flex gap-3 justify-between">
+            <div class="flex gap-2">
+              <button onclick="copyPreviousWeek()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                <i class="fas fa-copy mr-2"></i>Copiar Semana Anterior
+              </button>
+              <button onclick="showTemplates()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                <i class="fas fa-save mr-2"></i>Templates
+              </button>
+              <button onclick="showReports()" class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">
+                <i class="fas fa-file-export mr-2"></i>Relatórios
+              </button>
+            </div>
             <button onclick="submitWeek()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">
               <i class="fas fa-paper-plane mr-2"></i>Enviar Semana para Aprovação
             </button>
@@ -445,4 +456,251 @@ function getHeaderHTML() {
       </div>
     </header>
   `;
+}
+
+// Copiar semana anterior
+async function copyPreviousWeek() {
+  if (!confirm('Copiar lançamentos da semana anterior?')) return;
+  
+  const currentWeek = new Date(timesheet.weekStart);
+  currentWeek.setDate(currentWeek.getDate() - 7);
+  const previousWeek = currentWeek.toISOString().split('T')[0];
+  
+  try {
+    await axios.post('/templates/copy-week', {
+      source_week: previousWeek,
+      target_week: timesheet.weekStart
+    });
+    alert('Semana copiada com sucesso!');
+    loadWeekEntries();
+  } catch (e) {
+    alert(e.response?.data?.error || 'Erro ao copiar semana');
+  }
+}
+
+// Mostrar templates
+async function showTemplates() {
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+  modal.innerHTML = `
+    <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+      <h3 class="text-xl font-bold mb-4">Templates de Semana</h3>
+      <div id="templatesList">Carregando...</div>
+      <div class="mt-4 border-t pt-4">
+        <h4 class="font-semibold mb-2">Salvar Semana Atual como Template</h4>
+        <div class="flex gap-2">
+          <input type="text" id="templateName" placeholder="Nome do template" class="flex-1 px-3 py-2 border rounded" />
+          <button onclick="saveTemplate()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Salvar</button>
+        </div>
+      </div>
+      <button onclick="closeModal()" class="mt-4 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 w-full">Fechar</button>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+  
+  loadTemplatesList();
+}
+
+async function loadTemplatesList() {
+  try {
+    const res = await axios.get('/templates');
+    const templates = res.data.data || [];
+    
+    const listDiv = document.getElementById('templatesList');
+    if (templates.length === 0) {
+      listDiv.innerHTML = '<p class="text-gray-500 text-center py-4">Nenhum template salvo</p>';
+      return;
+    }
+    
+    let html = '<div class="space-y-2">';
+    templates.forEach(t => {
+      const data = JSON.parse(t.template_data);
+      html += `
+        <div class="border p-3 rounded flex justify-between items-center">
+          <div>
+            <p class="font-semibold">${t.name} ${t.is_default ? '<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Padrão</span>' : ''}</p>
+            <p class="text-sm text-gray-600">${data.length} lançamentos</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="applyTemplate('${t.id}')" class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">Aplicar</button>
+            <button onclick="deleteTemplate('${t.id}')" class="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700">Excluir</button>
+          </div>
+        </div>
+      `;
+    });
+    html += '</div>';
+    listDiv.innerHTML = html;
+  } catch (e) {
+    document.getElementById('templatesList').innerHTML = '<p class="text-red-500">Erro ao carregar templates</p>';
+  }
+}
+
+async function saveTemplate() {
+  const name = document.getElementById('templateName').value;
+  if (!name) {
+    alert('Digite um nome para o template');
+    return;
+  }
+  
+  try {
+    await axios.post('/templates', {
+      name,
+      week_start_date: timesheet.weekStart,
+      set_as_default: false
+    });
+    alert('Template salvo!');
+    document.getElementById('templateName').value = '';
+    loadTemplatesList();
+  } catch (e) {
+    alert(e.response?.data?.error || 'Erro ao salvar template');
+  }
+}
+
+async function applyTemplate(templateId) {
+  if (!confirm('Aplicar este template na semana atual? Isto irá substituir os lançamentos existentes.')) return;
+  
+  try {
+    await axios.post(`/templates/${templateId}/apply`, {
+      week_start_date: timesheet.weekStart
+    });
+    alert('Template aplicado!');
+    closeModal();
+    loadWeekEntries();
+  } catch (e) {
+    alert(e.response?.data?.error || 'Erro ao aplicar template');
+  }
+}
+
+async function deleteTemplate(templateId) {
+  if (!confirm('Excluir este template?')) return;
+  
+  try {
+    await axios.delete(`/templates/${templateId}`);
+    loadTemplatesList();
+  } catch (e) {
+    alert(e.response?.data?.error || 'Erro ao excluir template');
+  }
+}
+
+function closeModal() {
+  const modal = document.querySelector('.fixed.inset-0');
+  if (modal) modal.remove();
+}
+
+// Mostrar relatórios
+async function showReports() {
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+  modal.innerHTML = `
+    <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
+      <h3 class="text-xl font-bold mb-4">Relatórios</h3>
+      
+      <div class="space-y-4">
+        <div class="border p-4 rounded">
+          <h4 class="font-semibold mb-2">Relatório Individual</h4>
+          <div class="grid grid-cols-2 gap-2 mb-2">
+            <input type="date" id="reportStartDate" class="px-3 py-2 border rounded" />
+            <input type="date" id="reportEndDate" class="px-3 py-2 border rounded" />
+          </div>
+          <div class="flex gap-2">
+            <button onclick="generateReport('json')" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Ver Online</button>
+            <button onclick="generateReport('csv')" class="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Baixar CSV</button>
+          </div>
+        </div>
+      </div>
+      
+      <button onclick="closeModal()" class="mt-4 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 w-full">Fechar</button>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+  
+  // Preencher datas padrão (mês atual)
+  const today = new Date();
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  
+  document.getElementById('reportStartDate').value = firstDay.toISOString().split('T')[0];
+  document.getElementById('reportEndDate').value = lastDay.toISOString().split('T')[0];
+}
+
+async function generateReport(format) {
+  const startDate = document.getElementById('reportStartDate').value;
+  const endDate = document.getElementById('reportEndDate').value;
+  
+  if (!startDate || !endDate) {
+    alert('Selecione as datas');
+    return;
+  }
+  
+  try {
+    if (format === 'csv') {
+      window.open(`/api/reports/individual?start_date=${startDate}&end_date=${endDate}&format=csv`, '_blank');
+    } else {
+      const res = await axios.get(`/reports/individual?start_date=${startDate}&end_date=${endDate}`);
+      const data = res.data.data;
+      
+      // Mostrar relatório
+      showReportResults(data);
+    }
+  } catch (e) {
+    alert(e.response?.data?.error || 'Erro ao gerar relatório');
+  }
+}
+
+function showReportResults(data) {
+  closeModal();
+  
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+  modal.innerHTML = `
+    <div class="bg-white rounded-lg p-6 max-w-6xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+      <h3 class="text-xl font-bold mb-4">Relatório Individual - ${data.period.start_date} a ${data.period.end_date}</h3>
+      
+      <div class="grid grid-cols-3 gap-4 mb-6">
+        <div class="bg-blue-100 p-4 rounded">
+          <p class="text-sm text-gray-600">Total de Horas</p>
+          <p class="text-2xl font-bold text-blue-600">${data.summary.total_hours}h</p>
+        </div>
+        <div class="bg-green-100 p-4 rounded">
+          <p class="text-sm text-gray-600">Total de Lançamentos</p>
+          <p class="text-2xl font-bold text-green-600">${data.summary.total_entries}</p>
+        </div>
+        <div class="bg-purple-100 p-4 rounded">
+          <p class="text-sm text-gray-600">Projetos</p>
+          <p class="text-2xl font-bold text-purple-600">${Object.keys(data.summary.by_project).length}</p>
+        </div>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="px-3 py-2 text-left">Data</th>
+              <th class="px-3 py-2 text-left">Projeto</th>
+              <th class="px-3 py-2 text-left">Atividade</th>
+              <th class="px-3 py-2 text-right">Horas</th>
+              <th class="px-3 py-2 text-left">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.entries.map(e => `
+              <tr class="border-t">
+                <td class="px-3 py-2">${new Date(e.entry_date).toLocaleDateString('pt-BR')}</td>
+                <td class="px-3 py-2">${e.project_name}</td>
+                <td class="px-3 py-2">${e.activity_name}</td>
+                <td class="px-3 py-2 text-right font-semibold">${e.hours}h</td>
+                <td class="px-3 py-2"><span class="text-xs px-2 py-1 rounded bg-gray-100">${e.status}</span></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+      
+      <button onclick="closeModal()" class="mt-4 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 w-full">Fechar</button>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.onclick = (e) => { if (e.target === modal) closeModal(); };
 }

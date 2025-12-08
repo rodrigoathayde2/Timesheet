@@ -9,6 +9,9 @@ import users from './routes/users';
 import projects from './routes/projects';
 import activities from './routes/activities';
 import timesheets from './routes/timesheets';
+import dashboard from './routes/dashboard';
+import reports from './routes/reports';
+import templates from './routes/templates';
 
 // Import middleware
 import { authMiddleware } from './middleware/auth';
@@ -39,6 +42,9 @@ app.route('/api/users', users);
 app.route('/api/projects', projects);
 app.route('/api/activities', activities);
 app.route('/api/timesheets', timesheets);
+app.route('/api/dashboard', dashboard);
+app.route('/api/reports', reports);
+app.route('/api/templates', templates);
 
 // Página principal
 app.get('/', (c) => {
