@@ -4,6 +4,7 @@ Sistema profissional completo de controle de horas trabalhadas com fluxo de apro
 
 ## 🌐 URLs
 
+- **GitHub**: https://github.com/rodrigoathayde2/Timesheet
 - **Aplicação**: https://3000-ikqpi6t4kj9pc9qlvfuky-c81df28e.sandbox.novita.ai
 - **API Base**: https://3000-ikqpi6t4kj9pc9qlvfuky-c81df28e.sandbox.novita.ai/api
 - **Health Check**: https://3000-ikqpi6t4kj9pc9qlvfuky-c81df28e.sandbox.novita.ai/health
@@ -321,8 +322,8 @@ users → projects (N:N via user_project_assignments)
 
 ```bash
 # Clone o repositório
-git clone <repo-url>
-cd webapp
+git clone https://github.com/rodrigoathayde2/Timesheet.git
+cd Timesheet
 
 # Instale dependências
 npm install
