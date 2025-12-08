@@ -270,10 +270,10 @@ function getDashboardHTML() {
               <p class="text-sm text-gray-600">Visualize e envie timesheets</p>
             </div>
             
-            <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition cursor-pointer">
+            <div onclick="renderReportsView()" class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition cursor-pointer">
               <i class="fas fa-chart-line text-4xl text-purple-600 mb-3"></i>
               <h3 class="text-lg font-bold text-gray-800 mb-2">Meus Relatórios</h3>
-              <p class="text-sm text-gray-600">Histórico e análises (em breve)</p>
+              <p class="text-sm text-gray-600">Histórico e análises</p>
             </div>
           ` : ''}
           
@@ -401,6 +401,323 @@ async function loadDashboardData() {
     document.getElementById('weekHours').textContent = '0.00h';
     document.getElementById('monthHours').textContent = '0.00h';
     document.getElementById('pendingItems').textContent = '0';
+  }
+}
+
+// ============================================
+// RELATÓRIOS - INTERFACE COMPLETA
+// ============================================
+
+function renderReportsView() {
+  const appDiv = document.getElementById('app');
+  
+  // Calcular datas padrão (último mês)
+  const today = new Date();
+  const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+  
+  const defaultStart = lastMonth.toISOString().split('T')[0];
+  const defaultEnd = lastMonthEnd.toISOString().split('T')[0];
+  
+  appDiv.innerHTML = `
+    <div class="min-h-screen bg-gray-50">
+      <!-- Header -->
+      <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+          <div class="flex items-center space-x-4">
+            <button onclick="render('dashboard')" class="text-gray-600 hover:text-gray-800">
+              <i class="fas fa-arrow-left text-xl"></i>
+            </button>
+            <div>
+              <h1 class="text-2xl font-bold text-gray-800">
+                <i class="fas fa-chart-line text-purple-600 mr-2"></i>
+                Meus Relatórios
+              </h1>
+              <p class="text-sm text-gray-600">Visualize e exporte seu histórico de horas</p>
+            </div>
+          </div>
+          
+          <button onclick="handleLogout()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+            <i class="fas fa-sign-out-alt mr-2"></i>Sair
+          </button>
+        </div>
+      </header>
+      
+      <!-- Main Content -->
+      <main class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Filtros -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 class="text-lg font-bold text-gray-800 mb-4">
+            <i class="fas fa-filter mr-2"></i>Filtros
+          </h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Data Início</label>
+              <input 
+                type="date" 
+                id="reportStartDate" 
+                value="${defaultStart}"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Data Fim</label>
+              <input 
+                type="date" 
+                id="reportEndDate" 
+                value="${defaultEnd}"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div class="flex items-end">
+              <button 
+                onclick="loadIndividualReport()" 
+                class="w-full px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+              >
+                <i class="fas fa-search mr-2"></i>Buscar
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Resumo -->
+        <div id="reportSummary" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 hidden">
+          <div class="bg-white p-6 rounded-lg shadow-md">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-600 mb-1">Total de Horas</p>
+                <p class="text-3xl font-bold text-purple-600" id="reportTotalHours">0.00h</p>
+              </div>
+              <div class="bg-purple-100 p-3 rounded-full">
+                <i class="fas fa-clock text-2xl text-purple-600"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-white p-6 rounded-lg shadow-md">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-600 mb-1">Total de Lançamentos</p>
+                <p class="text-3xl font-bold text-blue-600" id="reportTotalEntries">0</p>
+              </div>
+              <div class="bg-blue-100 p-3 rounded-full">
+                <i class="fas fa-list text-2xl text-blue-600"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-white p-6 rounded-lg shadow-md">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-gray-600 mb-1">Média por Dia</p>
+                <p class="text-3xl font-bold text-green-600" id="reportAvgPerDay">0.00h</p>
+              </div>
+              <div class="bg-green-100 p-3 rounded-full">
+                <i class="fas fa-chart-bar text-2xl text-green-600"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Horas por Projeto -->
+        <div id="reportByProject" class="bg-white rounded-lg shadow-md p-6 mb-6 hidden">
+          <h3 class="text-lg font-bold text-gray-800 mb-4">
+            <i class="fas fa-project-diagram text-purple-600 mr-2"></i>
+            Horas por Projeto
+          </h3>
+          <div id="projectBars"></div>
+        </div>
+        
+        <!-- Tabela de Lançamentos -->
+        <div id="reportTable" class="bg-white rounded-lg shadow-md p-6 hidden">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold text-gray-800">
+              <i class="fas fa-table text-purple-600 mr-2"></i>
+              Detalhamento
+            </h3>
+            
+            <button 
+              onclick="exportReportCSV()" 
+              class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+            >
+              <i class="fas fa-file-csv mr-2"></i>Exportar CSV
+            </button>
+          </div>
+          
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Data</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Projeto</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Atividade</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Horas</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descrição</th>
+                </tr>
+              </thead>
+              <tbody id="reportTableBody" class="bg-white divide-y divide-gray-200">
+                <!-- Será preenchido via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Estado vazio -->
+        <div id="reportEmpty" class="bg-white rounded-lg shadow-md p-12 text-center">
+          <i class="fas fa-chart-line text-6xl text-gray-300 mb-4"></i>
+          <h3 class="text-xl font-bold text-gray-700 mb-2">Selecione um período</h3>
+          <p class="text-gray-500">Use os filtros acima para visualizar seus relatórios</p>
+        </div>
+      </main>
+    </div>
+  `;
+}
+
+async function loadIndividualReport() {
+  const startDate = document.getElementById('reportStartDate').value;
+  const endDate = document.getElementById('reportEndDate').value;
+  
+  if (!startDate || !endDate) {
+    alert('Por favor, selecione as datas');
+    return;
+  }
+  
+  try {
+    const response = await axios.get(`/reports/individual?start_date=${startDate}&end_date=${endDate}`);
+    const data = response.data.data;
+    
+    // Ocultar estado vazio
+    document.getElementById('reportEmpty').classList.add('hidden');
+    
+    // Mostrar resumo
+    document.getElementById('reportSummary').classList.remove('hidden');
+    document.getElementById('reportTotalHours').textContent = `${data.summary.total_hours.toFixed(2)}h`;
+    document.getElementById('reportTotalEntries').textContent = data.summary.total_entries;
+    
+    // Calcular média por dia
+    const days = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1;
+    const avgPerDay = data.summary.total_hours / days;
+    document.getElementById('reportAvgPerDay').textContent = `${avgPerDay.toFixed(2)}h`;
+    
+    // Mostrar horas por projeto
+    if (Object.keys(data.summary.by_project).length > 0) {
+      document.getElementById('reportByProject').classList.remove('hidden');
+      renderProjectBars(data.summary.by_project);
+    }
+    
+    // Mostrar tabela
+    document.getElementById('reportTable').classList.remove('hidden');
+    renderReportTable(data.entries);
+    
+  } catch (error) {
+    alert('Erro ao carregar relatório: ' + (error.response?.data?.error || 'Erro desconhecido'));
+    console.error(error);
+  }
+}
+
+function renderProjectBars(byProject) {
+  const container = document.getElementById('projectBars');
+  const maxHours = Math.max(...Object.values(byProject));
+  
+  let html = '';
+  for (const [project, hours] of Object.entries(byProject)) {
+    const percentage = (hours / maxHours) * 100;
+    html += `
+      <div class="mb-4">
+        <div class="flex justify-between mb-1">
+          <span class="text-sm font-medium text-gray-700">${project}</span>
+          <span class="text-sm font-bold text-purple-600">${hours.toFixed(2)}h</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-3">
+          <div class="bg-purple-600 h-3 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+        </div>
+      </div>
+    `;
+  }
+  
+  container.innerHTML = html;
+}
+
+function renderReportTable(entries) {
+  const tbody = document.getElementById('reportTableBody');
+  
+  if (entries.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Nenhum lançamento encontrado</td></tr>';
+    return;
+  }
+  
+  const statusColors = {
+    'RASCUNHO': 'bg-gray-100 text-gray-800',
+    'ENVIADO': 'bg-yellow-100 text-yellow-800',
+    'APROVADO_GESTOR': 'bg-green-100 text-green-800',
+    'REPROVADO_GESTOR': 'bg-red-100 text-red-800',
+    'APROVADO_DIRETOR': 'bg-blue-100 text-blue-800'
+  };
+  
+  const statusLabels = {
+    'RASCUNHO': 'Rascunho',
+    'ENVIADO': 'Enviado',
+    'APROVADO_GESTOR': 'Aprovado Gestor',
+    'REPROVADO_GESTOR': 'Reprovado',
+    'APROVADO_DIRETOR': 'Aprovado Diretor'
+  };
+  
+  let html = '';
+  entries.forEach(entry => {
+    const date = new Date(entry.entry_date).toLocaleDateString('pt-BR');
+    const statusClass = statusColors[entry.status] || 'bg-gray-100 text-gray-800';
+    const statusLabel = statusLabels[entry.status] || entry.status;
+    
+    html += `
+      <tr class="hover:bg-gray-50">
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${date}</td>
+        <td class="px-6 py-4 text-sm text-gray-900">${entry.project_name}</td>
+        <td class="px-6 py-4 text-sm text-gray-600">${entry.activity_name}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-purple-600">${entry.hours.toFixed(2)}h</td>
+        <td class="px-6 py-4 whitespace-nowrap">
+          <span class="px-2 py-1 text-xs font-semibold rounded-full ${statusClass}">
+            ${statusLabel}
+          </span>
+        </td>
+        <td class="px-6 py-4 text-sm text-gray-600">${entry.description || '-'}</td>
+      </tr>
+    `;
+  });
+  
+  tbody.innerHTML = html;
+}
+
+async function exportReportCSV() {
+  const startDate = document.getElementById('reportStartDate').value;
+  const endDate = document.getElementById('reportEndDate').value;
+  
+  if (!startDate || !endDate) {
+    alert('Por favor, selecione as datas');
+    return;
+  }
+  
+  try {
+    const response = await axios.get(`/reports/individual?start_date=${startDate}&end_date=${endDate}&format=csv`, {
+      responseType: 'blob'
+    });
+    
+    // Criar link de download
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `relatorio_individual_${startDate}_${endDate}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    
+    alert('Relatório exportado com sucesso!');
+  } catch (error) {
+    alert('Erro ao exportar relatório: ' + (error.response?.data?.error || 'Erro desconhecido'));
+    console.error(error);
   }
 }
 
