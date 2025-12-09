@@ -68,11 +68,11 @@ timesheets.get('/week/:weekStart', async (c) => {
       FROM timesheet_entries t
       LEFT JOIN projects p ON t.project_id = p.id
       LEFT JOIN activities a ON t.activity_id = a.id
-      WHERE t.user_id = ? AND t.week_start_date = ?
+      WHERE t.user_id = ? AND t.week_start_date BETWEEN ? AND DATE(?, '+6 days')
       ORDER BY t.entry_date ASC, p.name ASC
     `;
     
-    const result = await db.prepare(query).bind(user.userId, weekStart).all();
+    const result = await db.prepare(query).bind(user.userId, weekStart, weekStart).all();
     
     // Calcular totais
     const entries = result.results as any[];
@@ -273,8 +273,8 @@ timesheets.post('/submit', async (c) => {
     // Busca lançamentos da semana
     const entries = await db.prepare(`
       SELECT * FROM timesheet_entries 
-      WHERE user_id = ? AND week_start_date = ? AND status = 'RASCUNHO'
-    `).bind(user.userId, week_start_date).all();
+      WHERE user_id = ? AND week_start_date BETWEEN ? AND DATE(?, '+6 days') AND status = 'RASCUNHO'
+    `).bind(user.userId, week_start_date, week_start_date).all();
     
     if (!entries.results || entries.results.length === 0) {
       return errorResponse(c, 'Nenhum lançamento em rascunho para enviar');
@@ -285,8 +285,8 @@ timesheets.post('/submit', async (c) => {
     await db.prepare(`
       UPDATE timesheet_entries 
       SET status = 'ENVIADO', submitted_at = ?, updated_at = ?
-      WHERE user_id = ? AND week_start_date = ? AND status = 'RASCUNHO'
-    `).bind(now, now, user.userId, week_start_date).run();
+      WHERE user_id = ? AND week_start_date BETWEEN ? AND DATE(?, '+6 days') AND status = 'RASCUNHO'
+    `).bind(now, now, user.userId, week_start_date, week_start_date).run();
     
     // Audit log
     await createAuditLog(db, {
