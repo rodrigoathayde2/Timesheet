@@ -23,7 +23,7 @@ async function renderTimesheetView() {
   }
   
   // Calcular semana atual
-  timesheet.weekStart = getMonday(new Date());
+  timesheet.weekStart = timesheet.weekStart ?? getMonday(new Date());
   
   appDiv.innerHTML = `
     <div class="min-h-screen bg-gray-50">
