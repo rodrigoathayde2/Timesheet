@@ -320,6 +320,7 @@ users → projects (N:N via user_project_assignments)
 
 ## 📦 **Instalação Local**
 
+### **Linux / macOS**
 ```bash
 # Clone o repositório
 git clone https://github.com/rodrigoathayde2/Timesheet.git
@@ -340,6 +341,24 @@ pm2 start ecosystem.config.cjs
 # Teste
 npm run test
 ```
+
+### **Windows**
+
+📖 **Guia Completo**: [INSTALACAO_WINDOWS.md](INSTALACAO_WINDOWS.md)  
+⚡ **Início Rápido**: [START_WINDOWS.md](START_WINDOWS.md)
+
+```bash
+# Opção 1: Script automático
+.\setup-windows.ps1
+
+# Opção 2: Manual
+npm install
+npm run db:reset
+npm run build
+npm run dev:local
+```
+
+Acesse: **http://localhost:3000**
 
 ---
 
