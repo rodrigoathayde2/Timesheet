@@ -2,6 +2,8 @@
 
 Sistema profissional completo de controle de horas trabalhadas com fluxo de aprovação hierárquico, dashboards analíticos, relatórios e gestão de recursos.
 
+✅ **100% Compatível com Windows, Linux e macOS**
+
 ## 🌐 URLs
 
 - **GitHub**: https://github.com/rodrigoathayde2/Timesheet
