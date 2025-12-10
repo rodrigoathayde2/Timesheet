@@ -35,9 +35,6 @@ async function renderTimesheetView() {
             <h2 class="text-2xl font-bold text-gray-800">
               <i class="fas fa-clock mr-2"></i>Lançamento de Horas
             </h2>
-            <button onclick="render('dashboard')" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
-              <i class="fas fa-arrow-left mr-2"></i>Voltar
-            </button>
           </div>
           
           <!-- Seletor de Semana -->
@@ -319,9 +316,6 @@ async function renderApprovalsView() {
             <h2 class="text-2xl font-bold text-gray-800">
               <i class="fas fa-check-circle mr-2"></i>Aprovar Timesheets
             </h2>
-            <button onclick="render('dashboard')" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
-              <i class="fas fa-arrow-left mr-2"></i>Voltar
-            </button>
           </div>
           
           <div id="pendingList">
@@ -435,9 +429,14 @@ function getHeaderHTML() {
     <header class="bg-white shadow-sm">
       <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
         <div class="flex items-center space-x-4">
-          <i class="fas fa-clock text-3xl text-blue-600"></i>
+          <button onclick="render('dashboard')" class="text-gray-600 hover:text-gray-800">
+            <i class="fas fa-arrow-left text-xl"></i>
+          </button>
           <div>
-            <h1 class="text-2xl font-bold text-gray-800">Sistema de Timesheet</h1>
+            <h1 class="text-2xl font-bold text-gray-800">
+              <i class="fas fa-clock text-3xl text-blue-600"></i>
+              Sistema de Timesheet
+            </h1>
             <p class="text-sm text-gray-600">Bem-vindo, ${user.full_name}</p>
           </div>
         </div>

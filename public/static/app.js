@@ -763,3 +763,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     render('login');
   }
 });
+
+window.addEventListener('beforeunload', function(event) {
+  event.returnValue = 'Are you sure you want to leave?'; 
+  return 'Are you sure you want to leave?';
+});
