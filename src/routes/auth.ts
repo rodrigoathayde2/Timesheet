@@ -84,14 +84,14 @@ auth.post('/login', async (c) => {
  * GET /api/auth/me
  * Retorna dados do usuário autenticado
  */
-auth.get('/me', async (c) => {
+auth.get('/me/:userId', async (c) => {
   try {
-    const userPayload = c.get('user') as JWTPayload;
+    const userId = c.req.param('userId');
     
     const db = c.env.DB;
     const user = await db.prepare(
       'SELECT id, full_name, email, cpf, matricula, role, status, department_id, manager_id, avatar_url, timezone, weekly_hours, admission_date, created_at FROM users WHERE id = ? AND deleted_at IS NULL'
-    ).bind(userPayload.userId).first();
+    ).bind(userId).first();
     
     if (!user) {
       return errorResponse(c, 'Usuário não encontrado', 404);

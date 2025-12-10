@@ -19,6 +19,14 @@ function setToken(token) {
   axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 }
 
+function setUserId(userId) {
+  localStorage.setItem('userId', userId);
+}
+
+function getUserId() {
+  return localStorage.getItem('userId');
+}
+
 function getToken() {
   const token = localStorage.getItem('token');
   if (token) {
@@ -31,6 +39,7 @@ function removeToken() {
   app.token = null;
   app.currentUser = null;
   localStorage.removeItem('token');
+  localStorage.removeItem('userId');
   delete axios.defaults.headers.common['Authorization'];
 }
 
@@ -148,6 +157,7 @@ async function handleLogin(e) {
     if (response.data.success) {
       setToken(response.data.data.token);
       app.currentUser = response.data.data.user;
+      setUserId(app.currentUser.id);
       render('dashboard');
     }
   } catch (error) {
@@ -741,7 +751,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   if (token) {
     try {
-      const response = await axios.get('/auth/me');
+      const userId = getUserId();
+      const response = await axios.get('/auth/me/' + userId);
       app.currentUser = response.data.data;
       render('dashboard');
     } catch (error) {
