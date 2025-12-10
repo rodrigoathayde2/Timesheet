@@ -636,7 +636,19 @@ async function generateReport(format) {
   
   try {
     if (format === 'csv') {
-      window.open(`/api/reports/individual?start_date=${startDate}&end_date=${endDate}&format=csv`, '_blank');
+      const response = await axios.get(`/reports/individual?start_date=${startDate}&end_date=${endDate}&format=csv`, {
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `relatorio_individual_${startDate}_${endDate}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      
+      alert('Relatório exportado com sucesso!');
     } else {
       const res = await axios.get(`/reports/individual?start_date=${startDate}&end_date=${endDate}`);
       const data = res.data.data;
