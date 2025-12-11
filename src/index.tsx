@@ -21,12 +21,6 @@ const app = new Hono<{ Bindings: Bindings }>();
 // Middleware CORS para API
 app.use('/api/*', cors());
 
-// Servir arquivos estáticos
-app.use('/static/*', serveStatic({ root: './public' }));
-
-// Rotas de autenticação (login é público, /me é protegido)
-app.route('/api/auth', auth);
-
 // Middleware de autenticação para rotas protegidas (exceto /api/auth/login)
 app.use('/api/*', async (c, next) => {
   const path = c.req.path;
@@ -36,6 +30,12 @@ app.use('/api/*', async (c, next) => {
     await authMiddleware(c, next);
   }
 });
+
+// Servir arquivos estáticos
+app.use('/static/*', serveStatic({ root: './public' }));
+
+// Rotas de autenticação (login é público, /me é protegido)
+app.route('/api/auth', auth);
 
 // Rotas protegidas
 app.route('/api/users', users);
