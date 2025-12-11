@@ -17,21 +17,43 @@ projects.get('/', async (c) => {
     const offset = (page - 1) * limit;
     const status = c.req.query('status');
     
-    let query = 'SELECT * FROM projects WHERE deleted_at IS NULL';
+    let query = `
+      SELECT
+          projects.id,
+          projects.name,
+          projects.code,
+          projects.description,
+          projects.manager_id,
+          users.full_name manager_name,
+          projects.client,
+          projects.cost_center,
+          projects.start_date,
+          projects.end_date,
+          projects.status,
+          projects.budget_hours,
+          projects.hourly_rate,
+          projects.created_at,
+          projects.updated_at,
+          projects.deleted_at
+      FROM projects
+      LEFT JOIN users ON
+          projects.manager_id = users.id
+      WHERE projects.deleted_at IS NULL
+    `;
     const params: any[] = [];
     
     // Colaborador vê apenas projetos que está vinculado
     if (user.role === 'COLABORADOR') {
-      query += ' AND id IN (SELECT project_id FROM user_project_assignments WHERE user_id = ?)';
+      query += ' AND projects.id IN (SELECT project_id FROM user_project_assignments WHERE user_id = ?)';
       params.push(user.userId);
     }
     
     if (status) {
-      query += ' AND status = ?';
+      query += ' AND projects.status = ?';
       params.push(status);
     }
     
-    query += ' ORDER BY name ASC LIMIT ? OFFSET ?';
+    query += ' ORDER BY projects.name ASC LIMIT ? OFFSET ?';
     params.push(limit, offset);
     
     const result = await db.prepare(query).bind(...params).all();

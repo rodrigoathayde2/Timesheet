@@ -67,6 +67,7 @@ app.get('/', (c) => {
         <script src="/static/app.js"></script>
         <script src="/static/timesheet-app.js"></script>
         <script src="/static/user-app.js"></script>
+        <script src="/static/project-app.js"></script>
     </body>
     </html>
   `);

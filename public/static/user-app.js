@@ -162,7 +162,7 @@ async function loadUsersEntries() {
           <td class="px-4 py-2">${e.full_name}</td>
           <td class="px-4 py-2">${e.role}</td>
           <td class="px-4 py-2">${e.department_name}</td>
-          <td class="px-4 py-2">${e.manager_name || '-'}</td>
+          <td class="px-4 py-2">${e.manager_name || ''}</td>
           <td class="px-4 py-2 text-center">
             <button onclick="showUpdateEntry('${e.id}', '${e.full_name}', '${e.role}', '${e.department_id}', '${e.manager_id}', '${e.weekly_hours}')" class="text-red-600 hover:text-red-800"><i class="fas fa-edit"></i></button>
           </td>

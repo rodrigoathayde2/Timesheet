@@ -326,6 +326,12 @@ function getDashboardHTML() {
               <p class="text-sm text-gray-600">Gestão de usuários</p>
             </div>
             
+            <div onclick="renderProjectView()" class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition cursor-pointer">
+              <i class="fas fa-tasks text-4xl text-yellow-600 mb-3"></i>
+              <h3 class="text-lg font-bold text-gray-800 mb-2">Projetos</h3>
+              <p class="text-sm text-gray-600">Gestão de projetos</p>
+            </div>
+            
             <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition cursor-pointer">
               <i class="fas fa-file-alt text-4xl text-purple-600 mb-3"></i>
               <h3 class="text-lg font-bold text-gray-800 mb-2">Relatórios</h3>
