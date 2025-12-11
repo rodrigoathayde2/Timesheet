@@ -12,6 +12,7 @@ import timesheets from './routes/timesheets';
 import dashboard from './routes/dashboard';
 import reports from './routes/reports';
 import templates from './routes/templates';
+import departments from './routes/departments';
 
 // Import middleware
 import { authMiddleware } from './middleware/auth';
@@ -45,6 +46,7 @@ app.route('/api/timesheets', timesheets);
 app.route('/api/dashboard', dashboard);
 app.route('/api/reports', reports);
 app.route('/api/templates', templates);
+app.route('/api/departments', departments);
 
 // Página principal
 app.get('/', (c) => {
@@ -64,6 +66,7 @@ app.get('/', (c) => {
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script src="/static/app.js"></script>
         <script src="/static/timesheet-app.js"></script>
+        <script src="/static/user-app.js"></script>
     </body>
     </html>
   `);

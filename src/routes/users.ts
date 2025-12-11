@@ -16,6 +16,7 @@ const users = new Hono<{ Bindings: Bindings }>();
  * GET /api/users
  * Lista todos os usuários (com paginação e filtros)
  */
+
 users.get('/', requireDirector, async (c) => {
   try {
     const db = c.env.DB;
@@ -28,30 +29,53 @@ users.get('/', requireDirector, async (c) => {
     const status = c.req.query('status');
     const departmentId = c.req.query('department_id');
     
-    let query = 'SELECT id, full_name, email, cpf, matricula, role, status, department_id, manager_id, avatar_url, timezone, weekly_hours, admission_date, created_at FROM users WHERE deleted_at IS NULL';
+    let query = `SELECT
+        users.id,
+        users.full_name,
+        users.email,
+        users.cpf,
+        users.matricula,
+        users.role,
+        users.status,
+        users.department_id,
+        departments.name department_name,
+        users.manager_id,
+        manager.full_name manager_name,
+        users.avatar_url,
+        users.timezone,
+        users.weekly_hours,
+        users.admission_date,
+        users.created_at 
+    FROM users
+    LEFT JOIN departments ON
+        users.department_id = departments.id
+    LEFT JOIN users manager ON
+        users.manager_id = manager.id
+    WHERE users.deleted_at IS NULL`;
+
     const params: any[] = [];
     
     if (name) {
-      query += ' AND full_name LIKE ?';
+      query += ' AND users.full_name LIKE ?';
       params.push(`%${name}%`);
     }
     
     if (role) {
-      query += ' AND role = ?';
+      query += ' AND users.role = ?';
       params.push(role);
     }
     
     if (status) {
-      query += ' AND status = ?';
+      query += ' AND users.status = ?';
       params.push(status);
     }
     
     if (departmentId) {
-      query += ' AND department_id = ?';
+      query += ' AND users.department_id = ?';
       params.push(departmentId);
     }
     
-    query += ' ORDER BY full_name ASC LIMIT ? OFFSET ?';
+    query += ' ORDER BY users.full_name ASC LIMIT ? OFFSET ?';
     params.push(limit, offset);
     
     const result = await db.prepare(query).bind(...params).all();
@@ -95,6 +119,24 @@ users.get('/', requireDirector, async (c) => {
   } catch (error) {
     console.error('Erro ao listar usuários:', error);
     return errorResponse(c, 'Erro ao listar usuários', 500);
+  }
+});
+
+users.get('/managers', requireDirector, async (c) => {
+  try {
+    const db = c.env.DB;
+    
+    const result = await db.prepare(`
+      SELECT id, full_name, email, cpf, matricula, role, status, department_id, avatar_url, created_at
+      FROM users
+      WHERE role in ('GESTOR', 'DIRETOR')
+      ORDER BY full_name ASC
+    `).all();
+    
+    return successResponse(c, result.results);
+  } catch (error) {
+    console.error('Erro ao listar superiores:', error);
+    return errorResponse(c, 'Erro ao listar superiores', 500);
   }
 });
 
@@ -176,7 +218,7 @@ users.post('/', requireDirector, async (c) => {
       id,
       body.full_name,
       body.email,
-      body.cpf,
+      body.cpf.replace(/\D/g, ''),
       body.matricula,
       password_hash,
       body.role,
@@ -229,57 +271,16 @@ users.put('/:id', requireDirector, async (c) => {
       return notFoundResponse(c, 'Usuário não encontrado');
     }
     
-    // Validações
-    if (body.email && !isValidEmail(body.email)) {
-      return errorResponse(c, 'Email inválido');
-    }
-    
-    if (body.cpf && !isValidCPF(body.cpf)) {
-      return errorResponse(c, 'CPF inválido');
-    }
-    
     if (body.password && !isStrongPassword(body.password)) {
       return errorResponse(c, 'Senha deve ter no mínimo 8 caracteres, incluindo maiúsculas, minúsculas e números');
     }
-    
-    // Verifica duplicidade de email/cpf/matricula
-    if (body.email || body.cpf || body.matricula) {
-      const duplicates = await db.prepare(
-        'SELECT id FROM users WHERE id != ? AND (email = ? OR cpf = ? OR matricula = ?) AND deleted_at IS NULL'
-      ).bind(
-        id,
-        body.email || existingUser.email,
-        body.cpf || existingUser.cpf,
-        body.matricula || existingUser.matricula
-      ).first();
-      
-      if (duplicates) {
-        return errorResponse(c, 'Email, CPF ou matrícula já cadastrados');
-      }
-    }
-    
-    // Prepara campos para atualização
+        
     const updates: string[] = [];
     const params: any[] = [];
     
     if (body.full_name !== undefined) {
       updates.push('full_name = ?');
       params.push(body.full_name);
-    }
-    
-    if (body.email !== undefined) {
-      updates.push('email = ?');
-      params.push(body.email);
-    }
-    
-    if (body.cpf !== undefined) {
-      updates.push('cpf = ?');
-      params.push(body.cpf);
-    }
-    
-    if (body.matricula !== undefined) {
-      updates.push('matricula = ?');
-      params.push(body.matricula);
     }
     
     if (body.password !== undefined) {
@@ -307,22 +308,12 @@ users.put('/:id', requireDirector, async (c) => {
       params.push(body.manager_id);
     }
     
-    if (body.avatar_url !== undefined) {
-      updates.push('avatar_url = ?');
-      params.push(body.avatar_url);
-    }
-    
     if (body.weekly_hours !== undefined) {
       updates.push('weekly_hours = ?');
       params.push(body.weekly_hours);
     }
     
-    if (body.admission_date !== undefined) {
-      updates.push('admission_date = ?');
-      params.push(body.admission_date);
-    }
-    
-    if (body.termination_date !== undefined) {
+    if (body.termination_date) {
       updates.push('termination_date = ?');
       params.push(body.termination_date);
     }

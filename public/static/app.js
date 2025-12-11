@@ -320,10 +320,10 @@ function getDashboardHTML() {
               <p class="text-sm text-gray-600">Aprovação mensal consolidada</p>
             </div>
             
-            <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition cursor-pointer">
-              <i class="fas fa-cog text-4xl text-gray-600 mb-3"></i>
-              <h3 class="text-lg font-bold text-gray-800 mb-2">Administração</h3>
-              <p class="text-sm text-gray-600">Gestão de usuários e projetos</p>
+            <div onclick="renderUserView()" class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition cursor-pointer">
+              <i class="fas fa-user text-4xl text-gray-600 mb-3"></i>
+              <h3 class="text-lg font-bold text-gray-800 mb-2">Usuários</h3>
+              <p class="text-sm text-gray-600">Gestão de usuários</p>
             </div>
             
             <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition cursor-pointer">
