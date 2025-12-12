@@ -28,7 +28,7 @@ async function renderUserView() {
             <h2 class="text-2xl font-bold text-gray-800">
               <i class="fas fa-user mr-2"></i>Usuários
             </h2>
-            <button onclick="showModal()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">
+            <button onclick="showUserModal()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">
               <i class="fas fa-add mr-2"></i>Adicionar
             </button>
           </div>
@@ -44,7 +44,7 @@ async function renderUserView() {
   loadUsersEntries();
 }
 
-async function addEntry() {
+async function addUserEntry() {
   const fullName = document.getElementById('fullName').value;
   const email = document.getElementById('email').value;
   const cpf = document.getElementById('cpf').value;
@@ -89,7 +89,7 @@ async function addEntry() {
   }
 }
 
-async function updateEntry(id) {
+async function updateUserEntry(id) {
   const fullName = document.getElementById('fullName').value;
   const password = document.getElementById('password').value;
   const role = document.getElementById('role').value;
@@ -164,7 +164,7 @@ async function loadUsersEntries() {
           <td class="px-4 py-2">${e.department_name}</td>
           <td class="px-4 py-2">${e.manager_name || ''}</td>
           <td class="px-4 py-2 text-center">
-            <button onclick="showUpdateEntry('${e.id}', '${e.full_name}', '${e.role}', '${e.department_id}', '${e.manager_id}', '${e.weekly_hours}')" class="text-red-600 hover:text-red-800"><i class="fas fa-edit"></i></button>
+            <button onclick="showUpdateUserEntry('${e.id}', '${e.full_name}', '${e.role}', '${e.department_id}', '${e.manager_id}', '${e.weekly_hours}')" class="text-red-600 hover:text-red-800"><i class="fas fa-edit"></i></button>
           </td>
         </tr>
       `;
@@ -177,7 +177,7 @@ async function loadUsersEntries() {
   }
 }
 
-async function showUpdateEntry(id, fullName, role, department, manager, weekHours) {
+async function showUpdateUserEntry(id, fullName, role, department, manager, weekHours) {
   const modal = document.createElement('div');
   modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
   modal.innerHTML = `
@@ -220,7 +220,7 @@ async function showUpdateEntry(id, fullName, role, department, manager, weekHour
           </div>
         </div>
         <div class="flex justify-end">
-          <button onclick="updateEntry('${id}')" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+          <button onclick="updateUserEntry('${id}')" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
             <i class="fas fa-check mr-2"></i>Atualizar
           </button>
         </div>
@@ -269,7 +269,7 @@ function getHeaderHTML() {
   `;
 }
 
-async function showModal() {
+async function showUserModal() {
   const today = new Date();
   const defaultDate = today.toISOString().split('T')[0];
 
@@ -322,7 +322,7 @@ async function showModal() {
         </div>
       </div>
       <div class="flex justify-end">
-        <button onclick="addEntry()" class="mt-4 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">Adicionar</button>
+        <button onclick="addUserEntry()" class="mt-4 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">Adicionar</button>
       </div>
     </div>
   `;
