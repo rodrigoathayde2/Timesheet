@@ -3,7 +3,7 @@
 // ============================================
 
 // Configuração do Axios
-axios.defaults.baseURL = '/api';
+axios.defaults.baseURL = 'https://localhost:7194/api/v1';
 
 // Estado da aplicação
 const app = {
@@ -152,11 +152,11 @@ async function handleLogin(e) {
   errorDiv.classList.add('hidden');
   
   try {
-    const response = await axios.post('/auth/login', { email, password });
+    const response = await axios.post('/auth/login', { email, senha: password });
     
-    if (response.data.success) {
-      setToken(response.data.data.token);
-      app.currentUser = response.data.data.user;
+    if (response.status == 200) {
+      setToken(response.data.jwt);
+      app.currentUser = response.data.usuario;
       setUserId(app.currentUser.id);
       render('dashboard');
     }
@@ -190,13 +190,13 @@ function getDashboardHTML() {
             <i class="fas fa-clock text-3xl text-blue-600"></i>
             <div>
               <h1 class="text-2xl font-bold text-gray-800">Sistema de Timesheet</h1>
-              <p class="text-sm text-gray-600">Bem-vindo, ${user.full_name}</p>
+              <p class="text-sm text-gray-600">Bem-vindo, ${user.nome}</p>
             </div>
           </div>
           
           <div class="flex items-center space-x-4">
             <div class="text-right">
-              <p class="text-sm font-semibold text-gray-700">${user.full_name}</p>
+              <p class="text-sm font-semibold text-gray-700">${user.nome}</p>
               <p class="text-xs text-gray-500">
                 <i class="fas fa-id-badge mr-1"></i>${roleText[user.role]}
               </p>
@@ -368,13 +368,13 @@ function setupDashboardHandlers() {
 async function loadDashboardData() {
   try {
     // Carregar stats reais do backend
-    const response = await axios.get('/dashboard/stats');
-    const stats = response.data.data;
+    const response = await axios.get('/dashboard/status');
+    const stats = response.data;
     
     // Atualizar cards
-    document.getElementById('weekHours').textContent = `${stats.total_hours_week.toFixed(2)}h`;
-    document.getElementById('monthHours').textContent = `${stats.total_hours_month.toFixed(2)}h`;
-    document.getElementById('pendingItems').textContent = stats.pending_approvals;
+    document.getElementById('weekHours').textContent = `${stats.totalHorasSemanais.toFixed(2)}h`;
+    document.getElementById('monthHours').textContent = `${stats.totalHorasMes.toFixed(2)}h`;
+    document.getElementById('pendingItems').textContent = stats.aprovacoesPendentes;
     
     const user = app.currentUser;
     if (user.role === 'COLABORADOR') {
@@ -386,27 +386,27 @@ async function loadDashboardData() {
     // Atualizar resumo de status
     const statusSummary = `
       <div class="text-center p-3 bg-gray-100 rounded">
-        <p class="text-2xl font-bold text-gray-600">${stats.status_summary.rascunho || 0}</p>
+        <p class="text-2xl font-bold text-gray-600">${stats.resumo.rascunho || 0}</p>
         <p class="text-xs text-gray-600">Rascunho</p>
       </div>
       <div class="text-center p-3 bg-yellow-100 rounded">
-        <p class="text-2xl font-bold text-yellow-600">${stats.status_summary.enviado || 0}</p>
+        <p class="text-2xl font-bold text-yellow-600">${stats.resumo.enviado || 0}</p>
         <p class="text-xs text-gray-600">Enviado</p>
       </div>
       <div class="text-center p-3 bg-green-100 rounded">
-        <p class="text-2xl font-bold text-green-600">${stats.status_summary.aprovado_gestor || 0}</p>
+        <p class="text-2xl font-bold text-green-600">${stats.resumo.aprovadoGestor || 0}</p>
         <p class="text-xs text-gray-600">Aprov. Gestor</p>
       </div>
       <div class="text-center p-3 bg-red-100 rounded">
-        <p class="text-2xl font-bold text-red-600">${stats.status_summary.reprovado_gestor || 0}</p>
+        <p class="text-2xl font-bold text-red-600">${stats.resumo.reprovadoGestor || 0}</p>
         <p class="text-xs text-gray-600">Reprovado</p>
       </div>
       <div class="text-center p-3 bg-blue-100 rounded">
-        <p class="text-2xl font-bold text-blue-600">${stats.status_summary.aprovado_diretor || 0}</p>
+        <p class="text-2xl font-bold text-blue-600">${stats.resumo.aprovadoDiretor || 0}</p>
         <p class="text-xs text-gray-600">Aprov. Diretor</p>
       </div>
       <div class="text-center p-3 bg-purple-100 rounded">
-        <p class="text-2xl font-bold text-purple-600">${stats.status_summary.reprovado_diretor || 0}</p>
+        <p class="text-2xl font-bold text-purple-600">${stats.resumo.reprovadoDiretor || 0}</p>
         <p class="text-xs text-gray-600">Repr. Diretor</p>
       </div>
     `;
@@ -757,9 +757,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   if (token) {
     try {
-      const userId = getUserId();
-      const response = await axios.get('/auth/me/' + userId);
-      app.currentUser = response.data.data;
+      const response = await axios.get('/auth/me');
+      app.currentUser = response.data;
       render('dashboard');
     } catch (error) {
       removeToken();

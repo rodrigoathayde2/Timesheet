@@ -8,11 +8,11 @@ async function renderUserView() {
   const appDiv = document.getElementById('app');
   
   try {
-    const departments = await axios.get('/departments');
-    user.departments = departments.data.data || [];
+    const departments = await axios.get('/Departamento');
+    user.departments = departments.data || [];
     
-    const managers = await axios.get('/users/managers');
-    user.managers = managers.data.data || [];
+    const managers = await axios.get('/Usuario/Superior');
+    user.managers = managers.data || [];
     
   } catch (e) {
     console.error('Erro ao carregar dados:', e);
@@ -67,17 +67,17 @@ async function addUserEntry() {
   }
   
   try {
-    await axios.post('/users', {
-      full_name: fullName,
+    await axios.post('/usuario', {
+      nome: fullName,
       email,
       cpf,
       matricula,
-      password,
+      senha: password,
       role,
-      department_id: department,
-      manager_id: manager,
-      weekly_hours: weeklyHours,
-      admission_date: admissionDate,
+      idDepartamento: department,
+      idSuperior: manager,
+      horasSemanais: weeklyHours,
+      dataAdmissao: admissionDate,
     });
     
     closeModal();
@@ -109,14 +109,14 @@ async function updateUserEntry(id) {
   }
   
   try {
-    await axios.put(`/users/${id}`, {
-      full_name: fullName,
-      password,
+    await axios.put(`/usuario/${id}`, {
+      nome: fullName,
+      senha: password,
       role,
-      department_id: department,
-      manager_id: manager,
-      weekly_hours: weeklyHours,
-      termination_date: terminationDate,
+      idDepartamento: department,
+      idSuperior: manager,
+      horasSemanais: weeklyHours,
+      dataDesligamento: terminationDate,
     });
     
     closeModal();
@@ -130,9 +130,9 @@ async function updateUserEntry(id) {
 
 async function loadUsersEntries() {
   try {
-    const res = await axios.get(`/users?limit=1000`);
-    const data = res.data.data;
-    user.entries = data.data || [];
+    const res = await axios.get(`/Usuario`);
+    const data = res.data;
+    user.entries = data || [];
     
     const tableDiv = document.getElementById('entriesTable');
     
@@ -159,12 +159,12 @@ async function loadUsersEntries() {
     user.entries.forEach(e => {
       html += `
         <tr class="border-t">
-          <td class="px-4 py-2">${e.full_name}</td>
+          <td class="px-4 py-2">${e.nome}</td>
           <td class="px-4 py-2">${e.role}</td>
-          <td class="px-4 py-2">${e.department_name}</td>
-          <td class="px-4 py-2">${e.manager_name || ''}</td>
+          <td class="px-4 py-2">${e.nomeDepartamento}</td>
+          <td class="px-4 py-2">${e.nomeSuperior || ''}</td>
           <td class="px-4 py-2 text-center">
-            <button onclick="showUpdateUserEntry('${e.id}', '${e.full_name}', '${e.role}', '${e.department_id}', '${e.manager_id}', '${e.weekly_hours}')" class="text-red-600 hover:text-red-800"><i class="fas fa-edit"></i></button>
+            <button onclick="showUpdateUserEntry('${e.id}', '${e.nome}', '${e.role}', '${e.idDepartamento}', '${e.idSuperior}', '${e.horasSemanais}', '${e.dataDesligamento}')" class="text-red-600 hover:text-red-800"><i class="fas fa-edit"></i></button>
           </td>
         </tr>
       `;
@@ -177,7 +177,8 @@ async function loadUsersEntries() {
   }
 }
 
-async function showUpdateUserEntry(id, fullName, role, department, manager, weekHours) {
+async function showUpdateUserEntry(id, fullName, role, department, manager, weekHours, dataDesligamento) {
+  const data = dataDesligamento == 'null' ? '' : new Date(dataDesligamento).toISOString().split('T')[0];
   const modal = document.createElement('div');
   modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
   modal.innerHTML = `
@@ -198,12 +199,12 @@ async function showUpdateUserEntry(id, fullName, role, department, manager, week
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 py-2">
           <select id="department" class="px-3 py-2 border rounded-lg">
             <option value="">Selecione o Departamento</option>
-              ${user.departments.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+              ${user.departments.map(p => `<option value="${p.id}">${p.nome}</option>`).join('')}
           </select>
           
           <select id="manager" class="px-3 py-2 border rounded-lg">
             <option value="">Selecione o Superior</option>
-              ${user.managers.map(p => `<option value="${p.id}">${p.full_name}</option>`).join('')}
+              ${user.managers.map(p => `<option value="${p.id}">${p.nome}</option>`).join('')}
           </select>
 
           <input type="number" id="weeklyHours" placeholder="Horas Semanais" value="${weekHours}" class="px-3 py-2 border rounded-lg" />
@@ -214,7 +215,8 @@ async function showUpdateUserEntry(id, fullName, role, department, manager, week
             <label class="block text-sm font-medium text-gray-700 mb-2">Data Desligamento</label>
             <input 
               type="date" 
-              id="termination_date" 
+              id="termination_date"
+              value="${data}"
               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
           </div>
@@ -249,13 +251,13 @@ function getHeaderHTML() {
               <i class="fas fa-clock text-3xl text-blue-600"></i>
               Sistema de Timesheet
             </h1>
-            <p class="text-sm text-gray-600">Bem-vindo, ${user.full_name}</p>
+            <p class="text-sm text-gray-600">Bem-vindo, ${user.nome}</p>
           </div>
         </div>
         
         <div class="flex items-center space-x-4">
           <div class="text-right">
-            <p class="text-sm font-semibold text-gray-700">${user.full_name}</p>
+            <p class="text-sm font-semibold text-gray-700">${user.nome}</p>
             <p class="text-xs text-gray-500">
               <i class="fas fa-id-badge mr-1"></i>${roleText[user.role]}
             </p>
@@ -300,12 +302,12 @@ async function showUserModal() {
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3 py-2">
         <select id="department" class="px-3 py-2 border rounded-lg">
           <option value="">Selecione o Departamento</option>
-            ${user.departments.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+            ${user.departments.map(p => `<option value="${p.id}">${p.nome}</option>`).join('')}
         </select>
         
         <select id="manager" class="px-3 py-2 border rounded-lg">
           <option value="">Selecione o Superior</option>
-            ${user.managers.map(p => `<option value="${p.id}">${p.full_name}</option>`).join('')}
+            ${user.managers.map(p => `<option value="${p.id}">${p.nome}</option>`).join('')}
         </select>
 
         <input type="number" id="weeklyHours" placeholder="Horas Semanais" class="px-3 py-2 border rounded-lg" />

@@ -7,8 +7,8 @@ async function renderProjectView() {
   const appDiv = document.getElementById('app');
   
   try {    
-    const managers = await axios.get('/users?limit=1000');
-    project.managers = managers.data.data.data || [];
+    const managers = await axios.get('/usuario');
+    project.managers = managers.data || [];
     
   } catch (e) {
     console.error('Erro ao carregar dados:', e);
@@ -68,17 +68,17 @@ async function addEntry() {
   }
   
   try {
-    await axios.post('/projects', {
-      name,
-      code,
-      description,
-      manager_id,
-      client,
-      cost_center,
-      start_date,
-      end_date,
-      budget_hours,
-      hourly_rate,
+    await axios.post('/projeto', {
+      nome: name,
+      codigo: code,
+      descricao: description,
+      idGerente: manager_id,
+      cliente: client,
+      centroCusto: cost_center,
+      dataInicial: start_date,
+      dataFInal: !end_date ? null : end_date,
+      horaOrcamento: budget_hours,
+      taxaHora: hourly_rate,
     });
     
     closeModal();
@@ -116,15 +116,15 @@ async function updateEntry(id) {
   }
   
   try {
-    await axios.put(`/projects/${id}`, {
-      description,
-      manager_id,
-      client,
-      cost_center,
-      start_date,
-      end_date,
-      budget_hours,
-      hourly_rate,
+    await axios.put(`/projeto/${id}`, {
+      descricao: description,
+      idGerente: manager_id,
+      cliente: client,
+      centroCusto: cost_center,
+      dataInicial: start_date,
+      dataFInal: end_date,
+      horaOrcamento: budget_hours,
+      taxaHora: hourly_rate,
     });
     
     closeModal();
@@ -138,9 +138,9 @@ async function updateEntry(id) {
 
 async function loadProjectsEntries() {
   try {
-    const res = await axios.get(`/projects?limit=1000`);
-    const data = res.data.data;
-    project.entries = data.data || [];
+    const res = await axios.get(`/projeto`);
+    const data = res.data;
+    project.entries = data || [];
     
     const tableDiv = document.getElementById('entriesTable');
     
@@ -169,14 +169,14 @@ async function loadProjectsEntries() {
     project.entries.forEach(e => {
       html += `
         <tr class="border-t">
-          <td class="px-4 py-2">${e.name}</td>
-          <td class="px-4 py-2">${e.manager_name}</td>
-          <td class="px-4 py-2">${e.client}</td>
-          <td class="px-4 py-2">${e.start_date}</td>
-          <td class="px-4 py-2">${e.end_date || ''}</td>
-          <td class="px-4 py-2">${e.budget_hours}</td>
+          <td class="px-4 py-2">${e.nome}</td>
+          <td class="px-4 py-2">${e.nomeGerente}</td>
+          <td class="px-4 py-2">${e.cliente}</td>
+          <td class="px-4 py-2">${e.dataInicial}</td>
+          <td class="px-4 py-2">${e.dataFinal || ''}</td>
+          <td class="px-4 py-2">${e.horaOrcamento}</td>
           <td class="px-4 py-2 text-center">
-            <button onclick="showUpdateEntry('${e.id}', '${e.name}', '${e.code}', '${e.client}', '${e.cost_center}', '${e.budget_hours}', '${e.hourly_rate}', '${e.manager_id}', '${e.description}', '${e.start_date}', '${e.end_date}')" class="text-red-600 hover:text-red-800"><i class="fas fa-edit"></i></button>
+            <button onclick="showUpdateEntry('${e.id}', '${e.nome}', '${e.codigo}', '${e.cliente}', '${e.centroCusto}', '${e.horaOrcamento}', '${e.taxaHora}', '${e.idGerente}', '${e.descricao}', '${e.dataInicial}', '${e.dataFinal}')" class="text-red-600 hover:text-red-800"><i class="fas fa-edit"></i></button>
           </td>
         </tr>
       `;
@@ -190,6 +190,9 @@ async function loadProjectsEntries() {
 }
 
 async function showUpdateEntry(id, name, code, client, cost_center, budget_hours, hourly_rate, manager_id, description, start_date, end_date) {
+  const start = start_date.split('T')[0];
+  const end = end_date === 'undefined' ? '' : end_date.split('T')[0];
+
   const modal = document.createElement('div');
   modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
   modal.innerHTML = `
@@ -207,7 +210,7 @@ async function showUpdateEntry(id, name, code, client, cost_center, budget_hours
 
         <select id="manager_id" class="px-3 py-2 border rounded-lg">
           <option value="">Selecione o Gerente</option>
-            ${project.managers.map(p => `<option value="${p.id}">${p.full_name}</option>`).join('')}
+            ${project.managers.map(p => `<option value="${p.id}">${p.nome}</option>`).join('')}
         </select>
       </div>
       <div class="grid grid-cols-1 gap-3 py-2">
@@ -219,7 +222,7 @@ async function showUpdateEntry(id, name, code, client, cost_center, budget_hours
           <input 
             type="date" 
             id="start_date" 
-            value="${start_date}"
+            value="${start}"
             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           />
         </div>
@@ -229,7 +232,7 @@ async function showUpdateEntry(id, name, code, client, cost_center, budget_hours
           <input 
             type="date" 
             id="end_date" 
-            value="${end_date}"
+            value="${end}"
             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           />
         </div>
@@ -308,7 +311,7 @@ async function showModal() {
 
         <select id="manager_id" class="px-3 py-2 border rounded-lg">
           <option value="">Selecione o Gerente</option>
-            ${project.managers.map(p => `<option value="${p.id}">${p.full_name}</option>`).join('')}
+            ${project.managers.map(p => `<option value="${p.id}">${p.nome}</option>`).join('')}
         </select>
       </div>
       <div class="grid grid-cols-1 gap-3 py-2">
