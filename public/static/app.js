@@ -161,7 +161,7 @@ async function handleLogin(e) {
       render('dashboard');
     }
   } catch (error) {
-    const message = error.response?.data?.error || 'Erro ao fazer login';
+    const message = error.response?.data?.Errors.map(x => x.Message).join('\n') || 'Erro ao fazer login';
     document.getElementById('loginErrorMsg').textContent = message;
     errorDiv.classList.remove('hidden');
     btn.disabled = false;
@@ -430,10 +430,9 @@ function renderReportsView() {
   // Calcular datas padrão (último mês)
   const today = new Date();
   const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-  const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
   
   const defaultStart = lastMonth.toISOString().split('T')[0];
-  const defaultEnd = lastMonthEnd.toISOString().split('T')[0];
+  const defaultEnd = today.toISOString().split('T')[0];
   
   appDiv.innerHTML = `
     <div class="min-h-screen bg-gray-50">
@@ -603,34 +602,34 @@ async function loadIndividualReport() {
   }
   
   try {
-    const response = await axios.get(`/reports/individual?start_date=${startDate}&end_date=${endDate}`);
-    const data = response.data.data;
+    const response = await axios.get(`/timesheet/exportar?dataInicial=${startDate}&dataFinal=${endDate}`);
+    const data = response.data;
     
     // Ocultar estado vazio
     document.getElementById('reportEmpty').classList.add('hidden');
     
     // Mostrar resumo
     document.getElementById('reportSummary').classList.remove('hidden');
-    document.getElementById('reportTotalHours').textContent = `${data.summary.total_hours.toFixed(2)}h`;
-    document.getElementById('reportTotalEntries').textContent = data.summary.total_entries;
+    document.getElementById('reportTotalHours').textContent = `${data.totalHoras.toFixed(2)}h`;
+    document.getElementById('reportTotalEntries').textContent = data.total;
     
     // Calcular média por dia
     const days = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1;
-    const avgPerDay = data.summary.total_hours / days;
+    const avgPerDay = data.totalHoras / days;
     document.getElementById('reportAvgPerDay').textContent = `${avgPerDay.toFixed(2)}h`;
     
     // Mostrar horas por projeto
-    if (Object.keys(data.summary.by_project).length > 0) {
-      document.getElementById('reportByProject').classList.remove('hidden');
-      renderProjectBars(data.summary.by_project);
-    }
+    // if (Object.keys(data.summary.by_project).length > 0) {
+    //   document.getElementById('reportByProject').classList.remove('hidden');
+    //   renderProjectBars(data.summary.by_project);
+    // }
     
     // Mostrar tabela
     document.getElementById('reportTable').classList.remove('hidden');
-    renderReportTable(data.entries);
+    renderReportTable(data.dados);
     
   } catch (error) {
-    alert('Erro ao carregar relatório: ' + (error.response?.data?.error || 'Erro desconhecido'));
+    alert('Erro ao carregar relatório: ' + (error.response?.data?.Errors.map(x => x.Message).join('\n') || 'Erro desconhecido'));
     console.error(error);
   }
 }
@@ -684,22 +683,22 @@ function renderReportTable(entries) {
   
   let html = '';
   entries.forEach(entry => {
-    const date = new Date(entry.entry_date).toLocaleDateString('pt-BR');
+    const date = new Date(entry.data).toLocaleDateString('pt-BR');
     const statusClass = statusColors[entry.status] || 'bg-gray-100 text-gray-800';
     const statusLabel = statusLabels[entry.status] || entry.status;
     
     html += `
       <tr class="hover:bg-gray-50">
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${date}</td>
-        <td class="px-6 py-4 text-sm text-gray-900">${entry.project_name}</td>
-        <td class="px-6 py-4 text-sm text-gray-600">${entry.activity_name}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-purple-600">${entry.hours.toFixed(2)}h</td>
+        <td class="px-6 py-4 text-sm text-gray-900">${entry.nomeProjeto}</td>
+        <td class="px-6 py-4 text-sm text-gray-600">${entry.nomeAtividade}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-purple-600">${entry.horas.toFixed(2)}h</td>
         <td class="px-6 py-4 whitespace-nowrap">
           <span class="px-2 py-1 text-xs font-semibold rounded-full ${statusClass}">
             ${statusLabel}
           </span>
         </td>
-        <td class="px-6 py-4 text-sm text-gray-600">${entry.description || '-'}</td>
+        <td class="px-6 py-4 text-sm text-gray-600">${entry.descricao || '-'}</td>
       </tr>
     `;
   });
@@ -717,7 +716,7 @@ async function exportReportCSV() {
   }
   
   try {
-    const response = await axios.get(`/reports/individual?start_date=${startDate}&end_date=${endDate}&format=csv`, {
+    const response = await axios.get(`/timesheet/excel?dataInicial=${startDate}&dataFinal=${endDate}`, {
       responseType: 'blob'
     });
     
@@ -732,7 +731,7 @@ async function exportReportCSV() {
     
     alert('Relatório exportado com sucesso!');
   } catch (error) {
-    alert('Erro ao exportar relatório: ' + (error.response?.data?.error || 'Erro desconhecido'));
+    alert('Erro ao exportar relatório: ' + (error.response?.data?.Errors.map(x => x.Message).join('\n') || 'Erro desconhecido'));
     console.error(error);
   }
 }

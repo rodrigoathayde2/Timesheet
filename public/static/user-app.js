@@ -20,7 +20,7 @@ async function renderUserView() {
   
   appDiv.innerHTML = `
     <div class="min-h-screen bg-gray-50">
-      ${getHeaderHTML()}
+      ${getHeaderUserHTML()}
       
       <main class="max-w-7xl mx-auto px-2 py-2">
         <div class="bg-white rounded-lg shadow-md p-2">
@@ -85,7 +85,7 @@ async function addUserEntry() {
     loadUsersEntries();
     alert('Usuário adicionado!');
   } catch (e) {
-    alert(e.response?.data?.error || 'Erro ao adicionar usuário');
+    alert(e.response?.data?.Errors.map(x => x.Message).join('\n') || 'Erro ao adicionar usuário');
   }
 }
 
@@ -124,7 +124,7 @@ async function updateUserEntry(id) {
     loadUsersEntries();
     alert('Usuário atualizado!');
   } catch (e) {
-    alert(e.response?.data?.error || 'Erro ao atualizar usuário');
+    alert(e.response?.data?.Errors.map(x => x.Message).join('\n') || 'Erro ao atualizar usuário');
   }
 }
 
@@ -235,7 +235,7 @@ async function showUpdateUserEntry(id, fullName, role, department, manager, week
   document.getElementById('manager').value = manager;
 }
 
-function getHeaderHTML() {
+function getHeaderUserHTML() {
   const user = app.currentUser;
   const roleText = {'COLABORADOR': 'Colaborador', 'GESTOR': 'Gestor', 'DIRETOR': 'Diretor'};
   

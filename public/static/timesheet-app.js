@@ -16,18 +16,20 @@ async function renderTimesheetView() {
   
   // Carregar projetos
   try {
-    const projRes = await axios.get('/projects');
-    timesheet.projects = projRes.data.data.data || [];
+    const projRes = await axios.get('/projeto');
+    timesheet.projects = projRes.data || [];
   } catch (e) {
     console.error('Erro ao carregar projetos:', e);
   }
   
   // Calcular semana atual
-  timesheet.weekStart = timesheet.weekStart ?? getMonday(new Date());
+  const currentWeek =  new Date(getMonday(new Date()));
+  const weekStart = timesheet.weekStart ? new Date(timesheet.weekStart) : null;
+  timesheet.weekStart = weekStart ? new Date(weekStart.getTime() + (weekStart.getTimezoneOffset() * 60000)).toISOString() : new Date(currentWeek.getTime() - (currentWeek.getTimezoneOffset() * 60000)).toISOString();
   
   appDiv.innerHTML = `
     <div class="min-h-screen bg-gray-50">
-      ${getHeaderHTML()}
+      ${getHeaderTimesheetHTML()}
       
       <main class="max-w-7xl mx-auto px-4 py-8">
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -61,7 +63,7 @@ async function renderTimesheetView() {
               
               <select id="entryProject" onchange="loadActivities()" class="px-3 py-2 border rounded-lg">
                 <option value="">Selecione Projeto</option>
-                ${timesheet.projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+                ${timesheet.projects.map(p => `<option value="${p.id}">${p.nome}</option>`).join('')}
               </select>
               
               <select id="entryActivity" class="px-3 py-2 border rounded-lg">
@@ -111,7 +113,7 @@ async function renderTimesheetView() {
 function getMonday(d) {
   d = new Date(d);
   const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const diff = d.getDate() - day + (day === 0 ? -5 : 1);
   return new Date(d.setDate(diff)).toISOString().split('T')[0];
 }
 
@@ -120,6 +122,7 @@ function formatWeekRange(monday) {
   const start = new Date(monday);
   const end = new Date(monday);
   end.setDate(end.getDate() + 6);
+  
   return `${start.toLocaleDateString('pt-BR')} - ${end.toLocaleDateString('pt-BR')}`;
 }
 
@@ -130,7 +133,7 @@ function getWeekDatesOptions(monday) {
   for (let i = 0; i < 7; i++) {
     const date = new Date(monday);
     date.setDate(date.getDate() + i);
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = new Date(new Date(date.getTime() - (date.getTimezoneOffset() * 60000))).toISOString().split('T')[0];
     html += `<option value="${dateStr}">${days[i]} - ${date.toLocaleDateString('pt-BR')}</option>`;
   }
   return html;
@@ -155,10 +158,10 @@ async function loadActivities() {
   }
   
   try {
-    const res = await axios.get(`/activities?project_id=${projectId}`);
-    const activities = res.data.data || [];
+    const res = await axios.get(`/atividade?idProjeto=${projectId}`);
+    const activities = res.data || [];
     select.innerHTML = '<option value="">Selecione Atividade</option>' +
-      activities.map(a => `<option value="${a.id}">${a.name} (${a.type})</option>`).join('');
+      activities.map(a => `<option value="${a.id}">${a.nome} (${a.tipo})</option>`).join('');
   } catch (e) {
     console.error('Erro ao carregar atividades:', e);
     alert('Erro ao carregar atividades');
@@ -184,12 +187,12 @@ async function addEntry() {
   }
   
   try {
-    await axios.post('/timesheets', {
-      entry_date: date,
-      project_id: projectId,
-      activity_id: activityId,
-      hours,
-      description
+    await axios.post('/timesheet', {
+      data: date,
+      idProjeto: projectId,
+      idAtividade: activityId,
+      horas: hours,
+      descricao: description
     });
     
     // Limpar form
@@ -200,16 +203,16 @@ async function addEntry() {
     loadWeekEntries();
     alert('Lançamento adicionado!');
   } catch (e) {
-    alert(e.response?.data?.error || 'Erro ao adicionar lançamento');
+    alert(e.response?.data?.Errors.map(x => x.Message).join('\n') || 'Erro ao adicionar lançamento');
   }
 }
 
 // Carregar lançamentos da semana
 async function loadWeekEntries() {
   try {
-    const res = await axios.get(`/timesheets/week/${getMonday(timesheet.weekStart)}`);
-    const data = res.data.data;
-    timesheet.entries = data.entries || [];
+    const res = await axios.get(`/Timesheet/Semana?dataInicioSemana=${getMonday(timesheet.weekStart)}`);
+    const data = res.data;
+    timesheet.entries = data.timesheet || [];
     
     const tableDiv = document.getElementById('entriesTable');
     
@@ -238,18 +241,18 @@ async function loadWeekEntries() {
     `;
     
     timesheet.entries.forEach(e => {
-      const date = new Date(e.entry_date).toLocaleDateString('pt-BR');
-      const canEdit = e.status === 'RASCUNHO';
+      const date = new Date(e.timesheet.data).toLocaleDateString('pt-BR');
+      const canEdit = e.timesheet.status === 'RASCUNHO';
       
       html += `
         <tr class="border-t">
           <td class="px-4 py-2">${date}</td>
-          <td class="px-4 py-2">${e.project_name || '-'}</td>
-          <td class="px-4 py-2">${e.activity_name || '-'}</td>
-          <td class="px-4 py-2 text-right font-semibold">${e.hours}h</td>
-          <td class="px-4 py-2 text-sm text-gray-600">${e.description || '-'}</td>
+          <td class="px-4 py-2">${e.nomeProjeto || '-'}</td>
+          <td class="px-4 py-2">${e.nomeAtividade || '-'}</td>
+          <td class="px-4 py-2 text-right font-semibold">${e.timesheet.horas}h</td>
+          <td class="px-4 py-2 text-sm text-gray-600">${e.timesheet.descricao || '-'}</td>
           <td class="px-4 py-2 text-center">
-            ${canEdit ? `<button onclick="deleteEntry('${e.id}')" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>` : '<span class="text-green-600"><i class="fas fa-lock"></i></span>'}
+            ${canEdit ? `<button onclick="deleteEntry('${e.timesheet.id}')" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>` : '<span class="text-green-600"><i class="fas fa-lock"></i></span>'}
           </td>
         </tr>
       `;
@@ -260,7 +263,7 @@ async function loadWeekEntries() {
         <tfoot class="bg-gray-100 font-bold">
           <tr>
             <td colspan="3" class="px-4 py-2 text-right">Total:</td>
-            <td class="px-4 py-2 text-right">${data.total_hours || 0}h</td>
+            <td class="px-4 py-2 text-right">${data.totalHoras || 0}h</td>
             <td colspan="2"></td>
           </tr>
         </tfoot>
@@ -279,11 +282,11 @@ async function deleteEntry(id) {
   if (!confirm('Deseja realmente excluir este lançamento?')) return;
   
   try {
-    await axios.delete(`/timesheets/${id}`);
+    await axios.delete(`/timesheet/${id}`);
     loadWeekEntries();
     alert('Lançamento excluído!');
   } catch (e) {
-    alert(e.response?.data?.error || 'Erro ao excluir lançamento');
+    alert(e.response?.data?.Errors.map(x => x.Message).join('\n') || 'Erro ao excluir lançamento');
   }
 }
 
@@ -292,13 +295,13 @@ async function submitWeek() {
   if (!confirm('Após enviar, você não poderá mais editar esta semana. Confirma?')) return;
   
   try {
-    await axios.post('/timesheets/submit', {
-      week_start_date: getMonday(timesheet.weekStart)
+    await axios.post('/timesheet/enviar', {
+      dataInicioSemana: timesheet.weekStart
     });
     alert('Semana enviada para aprovação!');
     renderTimesheetView();
   } catch (e) {
-    alert(e.response?.data?.error || 'Erro ao enviar semana');
+    alert(e.response?.data?.Errors.map(x => x.Message).join('\n') || 'Erro ao enviar semana');
   }
 }
 
@@ -308,7 +311,7 @@ async function renderApprovalsView() {
   
   appDiv.innerHTML = `
     <div class="min-h-screen bg-gray-50">
-      ${getHeaderHTML()}
+      ${getHeaderTimesheetHTML()}
       
       <main class="max-w-7xl mx-auto px-4 py-8">
         <div class="bg-white rounded-lg shadow-md p-6">
@@ -332,8 +335,8 @@ async function renderApprovalsView() {
 // Carregar pendências
 async function loadPendingApprovals() {
   try {
-    const res = await axios.get('/timesheets/pending-approvals');
-    const pending = res.data.data || [];
+    const res = await axios.get('/timesheet/pendentes');
+    const pending = res.data || [];
     
     const listDiv = document.getElementById('pendingList');
     
@@ -345,28 +348,28 @@ async function loadPendingApprovals() {
     let html = '<div class="space-y-4">';
     
     pending.forEach(p => {
-      const submitted = new Date(p.submitted_at).toLocaleString('pt-BR');
+      const submitted = new Date(p.dataEnvio).toLocaleString('pt-BR');
       
       html += `
         <div class="border rounded-lg p-4 hover:bg-gray-50">
           <div class="flex justify-between items-start">
             <div>
-              <h3 class="font-semibold text-lg">${p.full_name}</h3>
+              <h3 class="font-semibold text-lg">${p.nome}</h3>
               <p class="text-sm text-gray-600">${p.email}</p>
               <p class="text-sm mt-1">
-                <i class="fas fa-calendar mr-1"></i>Semana: ${formatWeekRange(p.week_start_date)}
+                <i class="fas fa-calendar mr-1"></i>Semana: ${formatWeekRange(p.dataInicioSemana)}
               </p>
               <p class="text-sm">
-                <i class="fas fa-clock mr-1"></i>${p.total_hours}h | ${p.entries_count} lançamentos
+                <i class="fas fa-clock mr-1"></i>${p.totalHoras}h | ${p.total} lançamentos
               </p>
               <p class="text-xs text-gray-500 mt-1">Enviado em: ${submitted}</p>
             </div>
             
             <div class="flex gap-2">
-              <button onclick="approveWeek('${p.user_id}', '${p.week_start_date}')" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+              <button onclick="approveWeek('${p.idUsuario}', '${p.dataInicioSemana}')" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
                 <i class="fas fa-check mr-1"></i>Aprovar
               </button>
-              <button onclick="rejectWeek('${p.user_id}', '${p.week_start_date}')" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+              <button onclick="rejectWeek('${p.idUsuario}', '${p.dataInicioSemana}')" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
                 <i class="fas fa-times mr-1"></i>Reprovar
               </button>
             </div>
@@ -388,14 +391,14 @@ async function approveWeek(userId, weekStart) {
   if (!confirm('Aprovar esta semana?')) return;
   
   try {
-    await axios.post('/timesheets/approve', {
-      user_id: userId,
-      week_start_date: weekStart
+    await axios.post('/timesheet/aprovar', {
+      idUsuarioSubordinado: userId,
+      dataInicioSemana: weekStart
     });
     alert('Semana aprovada!');
     loadPendingApprovals();
   } catch (e) {
-    alert(e.response?.data?.error || 'Erro ao aprovar');
+    alert(e.response?.data?.Errors.map(x => x.Message).join('\n') || 'Erro ao aprovar');
   }
 }
 
@@ -408,20 +411,20 @@ async function rejectWeek(userId, weekStart) {
   }
   
   try {
-    await axios.post('/timesheets/reject', {
-      user_id: userId,
-      week_start_date: weekStart,
-      reason
+    await axios.post('/timesheet/reprovar', {
+      idUsuarioSubordinado: userId,
+      dataInicioSemana: weekStart,
+      motivo: reason
     });
     alert('Semana reprovada!');
     loadPendingApprovals();
   } catch (e) {
-    alert(e.response?.data?.error || 'Erro ao reprovar');
+    alert(e.response?.data?.Errors.map(x => x.Message).join('\n') || 'Erro ao reprovar');
   }
 }
 
 // Header compartilhado
-function getHeaderHTML() {
+function getHeaderTimesheetHTML() {
   const user = app.currentUser;
   const roleText = {'COLABORADOR': 'Colaborador', 'GESTOR': 'Gestor', 'DIRETOR': 'Diretor'};
   
@@ -437,13 +440,13 @@ function getHeaderHTML() {
               <i class="fas fa-clock text-3xl text-blue-600"></i>
               Sistema de Timesheet
             </h1>
-            <p class="text-sm text-gray-600">Bem-vindo, ${user.full_name}</p>
+            <p class="text-sm text-gray-600">Bem-vindo, ${user.nome}</p>
           </div>
         </div>
         
         <div class="flex items-center space-x-4">
           <div class="text-right">
-            <p class="text-sm font-semibold text-gray-700">${user.full_name}</p>
+            <p class="text-sm font-semibold text-gray-700">${user.nome}</p>
             <p class="text-xs text-gray-500">
               <i class="fas fa-id-badge mr-1"></i>${roleText[user.role]}
             </p>
@@ -466,14 +469,14 @@ async function copyPreviousWeek() {
   const previousWeek = currentWeek.toISOString().split('T')[0];
   
   try {
-    await axios.post('/templates/copy-week', {
-      source_week: previousWeek,
-      target_week: timesheet.weekStart
+    await axios.post('/timesheet/copiar', {
+      dataSemanaOrigem : previousWeek,
+      dataSemanaDestino: timesheet.weekStart.split('T')[0]
     });
     alert('Semana copiada com sucesso!');
     loadWeekEntries();
   } catch (e) {
-    alert(e.response?.data?.error || 'Erro ao copiar semana');
+    alert(e.response?.data?.Errors.map(x => x.Message).join('\n') || 'Erro ao copiar semana');
   }
 }
 
@@ -503,8 +506,8 @@ async function showTemplates() {
 
 async function loadTemplatesList() {
   try {
-    const res = await axios.get('/templates');
-    const templates = res.data.data || [];
+    const res = await axios.get('/template');
+    const templates = res.data || [];
     
     const listDiv = document.getElementById('templatesList');
     if (templates.length === 0) {
@@ -514,11 +517,11 @@ async function loadTemplatesList() {
     
     let html = '<div class="space-y-2">';
     templates.forEach(t => {
-      const data = JSON.parse(t.template_data);
+      const data = JSON.parse(t.dados);
       html += `
         <div class="border p-3 rounded flex justify-between items-center">
           <div>
-            <p class="font-semibold">${t.name} ${t.is_default ? '<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Padrão</span>' : ''}</p>
+            <p class="font-semibold">${t.nome} ${t.padrao ? '<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Padrão</span>' : ''}</p>
             <p class="text-sm text-gray-600">${data.length} lançamentos</p>
           </div>
           <div class="flex gap-2">
@@ -543,31 +546,31 @@ async function saveTemplate() {
   }
   
   try {
-    await axios.post('/templates', {
-      name,
-      week_start_date: timesheet.weekStart,
-      set_as_default: false
+    await axios.post('/template', {
+      nome: name,
+      dataInicioSemana: timesheet.weekStart.split('T')[0],
+      padrao: false
     });
     alert('Template salvo!');
     document.getElementById('templateName').value = '';
     loadTemplatesList();
   } catch (e) {
-    alert(e.response?.data?.error || 'Erro ao salvar template');
+    alert(e.response?.data?.Errors.map(x => x.Message).join('\n') || 'Erro ao salvar template');
   }
 }
 
 async function applyTemplate(templateId) {
-  if (!confirm('Aplicar este template na semana atual? Isto irá substituir os lançamentos existentes.')) return;
+  if (!confirm('Aplicar este template na semana atual?')) return;
   
   try {
-    await axios.post(`/templates/${templateId}/apply`, {
-      week_start_date: timesheet.weekStart
+    await axios.post(`/template/${templateId}/aplicar`, {
+      dataInicioSemana: timesheet.weekStart.split('T')[0]
     });
     alert('Template aplicado!');
     closeModal();
     loadWeekEntries();
   } catch (e) {
-    alert(e.response?.data?.error || 'Erro ao aplicar template');
+    alert(e.response?.data?.Errors.map(x => x.Message).join('\n') || 'Erro ao aplicar template');
   }
 }
 
@@ -575,10 +578,10 @@ async function deleteTemplate(templateId) {
   if (!confirm('Excluir este template?')) return;
   
   try {
-    await axios.delete(`/templates/${templateId}`);
+    await axios.delete(`/template/${templateId}`);
     loadTemplatesList();
   } catch (e) {
-    alert(e.response?.data?.error || 'Erro ao excluir template');
+    alert(e.response?.data?.Errors.map(x => x.Message).join('\n') || 'Erro ao excluir template');
   }
 }
 
@@ -635,7 +638,7 @@ async function generateReport(format) {
   
   try {
     if (format === 'csv') {
-      const response = await axios.get(`/reports/individual?start_date=${startDate}&end_date=${endDate}&format=csv`, {
+      const response = await axios.get(`/timesheet/excel?dataInicial=${startDate}&dataFinal=${endDate}`, {
         responseType: 'blob'
       });
       
@@ -649,14 +652,14 @@ async function generateReport(format) {
       
       alert('Relatório exportado com sucesso!');
     } else {
-      const res = await axios.get(`/reports/individual?start_date=${startDate}&end_date=${endDate}`);
-      const data = res.data.data;
+      const res = await axios.get(`/timesheet/exportar?dataInicial=${startDate}&dataFinal=${endDate}`);
+      const data = res.data;
       
       // Mostrar relatório
       showReportResults(data);
     }
   } catch (e) {
-    alert(e.response?.data?.error || 'Erro ao gerar relatório');
+    alert(e.response?.data?.Errors.map(x => x.Message).join('\n') || 'Erro ao gerar relatório');
   }
 }
 
@@ -667,20 +670,20 @@ function showReportResults(data) {
   modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
   modal.innerHTML = `
     <div class="bg-white rounded-lg p-6 max-w-6xl w-full mx-4 max-h-[80vh] overflow-y-auto">
-      <h3 class="text-xl font-bold mb-4">Relatório Individual - ${data.period.start_date} a ${data.period.end_date}</h3>
+      <h3 class="text-xl font-bold mb-4">Relatório Individual - ${new Date(data.dataInicial).toLocaleDateString('pt-BR')} a ${new Date(data.dataFinal).toLocaleDateString('pt-BR')}</h3>
       
       <div class="grid grid-cols-3 gap-4 mb-6">
         <div class="bg-blue-100 p-4 rounded">
           <p class="text-sm text-gray-600">Total de Horas</p>
-          <p class="text-2xl font-bold text-blue-600">${data.summary.total_hours}h</p>
+          <p class="text-2xl font-bold text-blue-600">${data.totalHoras}h</p>
         </div>
         <div class="bg-green-100 p-4 rounded">
           <p class="text-sm text-gray-600">Total de Lançamentos</p>
-          <p class="text-2xl font-bold text-green-600">${data.summary.total_entries}</p>
+          <p class="text-2xl font-bold text-green-600">${data.total}</p>
         </div>
         <div class="bg-purple-100 p-4 rounded">
           <p class="text-sm text-gray-600">Projetos</p>
-          <p class="text-2xl font-bold text-purple-600">${Object.keys(data.summary.by_project).length}</p>
+          <p class="text-2xl font-bold text-purple-600">${data.totalProjetos}</p>
         </div>
       </div>
       
@@ -696,12 +699,12 @@ function showReportResults(data) {
             </tr>
           </thead>
           <tbody>
-            ${data.entries.map(e => `
+            ${data.dados.map(e => `
               <tr class="border-t">
-                <td class="px-3 py-2">${new Date(e.entry_date).toLocaleDateString('pt-BR')}</td>
-                <td class="px-3 py-2">${e.project_name}</td>
-                <td class="px-3 py-2">${e.activity_name}</td>
-                <td class="px-3 py-2 text-right font-semibold">${e.hours}h</td>
+                <td class="px-3 py-2">${new Date(e.data).toLocaleDateString('pt-BR')}</td>
+                <td class="px-3 py-2">${e.nomeProjeto}</td>
+                <td class="px-3 py-2">${e.nomeAtividade}</td>
+                <td class="px-3 py-2 text-right font-semibold">${e.horas}h</td>
                 <td class="px-3 py-2"><span class="text-xs px-2 py-1 rounded bg-gray-100">${e.status}</span></td>
               </tr>
             `).join('')}

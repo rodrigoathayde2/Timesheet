@@ -16,7 +16,7 @@ async function renderProjectView() {
   
   appDiv.innerHTML = `
     <div class="min-h-screen bg-gray-50">
-      ${getHeaderHTML()}
+      ${getHeaderProjectsHTML()}
       
       <main class="max-w-7xl mx-auto px-2 py-2">
         <div class="bg-white rounded-lg shadow-md p-2">
@@ -24,7 +24,7 @@ async function renderProjectView() {
             <h2 class="text-2xl font-bold text-gray-800">
               <i class="fas fa-tasks mr-2"></i>Projetos
             </h2>
-            <button onclick="showModal()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">
+            <button onclick="showProjectModal()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold">
               <i class="fas fa-add mr-2"></i>Adicionar
             </button>
           </div>
@@ -40,7 +40,7 @@ async function renderProjectView() {
   loadProjectsEntries();
 }
 
-async function addEntry() {
+async function addProjectEntry() {
   const name = document.getElementById('name').value;
   const code = document.getElementById('code').value;
   const description = document.getElementById('description').value;
@@ -86,11 +86,11 @@ async function addEntry() {
     loadProjectsEntries();
     alert('Projeto adicionado!');
   } catch (e) {
-    alert(e.response?.data?.error || 'Erro ao adicionar projeto');
+    alert(e.response?.data?.Errors.map(x => x.Message).join('\n') || 'Erro ao adicionar projeto');
   }
 }
 
-async function updateEntry(id) {
+async function updateProjectEntry(id) {
   const description = document.getElementById('description').value;
   const manager_id = document.getElementById('manager_id').value;
   const client = document.getElementById('client').value;
@@ -132,7 +132,7 @@ async function updateEntry(id) {
     loadProjectsEntries();
     alert('Projeto atualizado!');
   } catch (e) {
-    alert(e.response?.data?.error || 'Erro ao atualizar projeto');
+    alert(e.response?.data?.Errors.map(x => x.Message).join('\n') || 'Erro ao atualizar projeto');
   }
 }
 
@@ -176,7 +176,7 @@ async function loadProjectsEntries() {
           <td class="px-4 py-2">${e.dataFinal || ''}</td>
           <td class="px-4 py-2">${e.horaOrcamento}</td>
           <td class="px-4 py-2 text-center">
-            <button onclick="showUpdateEntry('${e.id}', '${e.nome}', '${e.codigo}', '${e.cliente}', '${e.centroCusto}', '${e.horaOrcamento}', '${e.taxaHora}', '${e.idGerente}', '${e.descricao}', '${e.dataInicial}', '${e.dataFinal}')" class="text-red-600 hover:text-red-800"><i class="fas fa-edit"></i></button>
+            <button onclick="showUpdateProjectEntry('${e.id}', '${e.nome}', '${e.codigo}', '${e.cliente}', '${e.centroCusto}', '${e.horaOrcamento}', '${e.taxaHora}', '${e.idGerente}', '${e.descricao}', '${e.dataInicial}', '${e.dataFinal}')" class="text-red-600 hover:text-red-800"><i class="fas fa-edit"></i></button>
           </td>
         </tr>
       `;
@@ -189,7 +189,7 @@ async function loadProjectsEntries() {
   }
 }
 
-async function showUpdateEntry(id, name, code, client, cost_center, budget_hours, hourly_rate, manager_id, description, start_date, end_date) {
+async function showUpdateProjectEntry(id, name, code, client, cost_center, budget_hours, hourly_rate, manager_id, description, start_date, end_date) {
   const start = start_date.split('T')[0];
   const end = end_date === 'undefined' ? '' : end_date.split('T')[0];
 
@@ -238,7 +238,7 @@ async function showUpdateEntry(id, name, code, client, cost_center, budget_hours
         </div>
       </div>
       <div class="flex justify-end">
-        <button onclick="updateEntry('${id}')" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+        <button onclick="updateProjectEntry('${id}')" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
           <i class="fas fa-check mr-2"></i>Atualizar
         </button>
       </div>
@@ -249,7 +249,7 @@ async function showUpdateEntry(id, name, code, client, cost_center, budget_hours
   document.getElementById('manager_id').value = manager_id;
 }
 
-function getHeaderHTML() {
+function getHeaderProjectsHTML() {
   const user = app.currentUser;
   const roleText = {'COLABORADOR': 'Colaborador', 'GESTOR': 'Gestor', 'DIRETOR': 'Diretor'};
   
@@ -265,13 +265,13 @@ function getHeaderHTML() {
               <i class="fas fa-clock text-3xl text-blue-600"></i>
               Sistema de Timesheet
             </h1>
-            <p class="text-sm text-gray-600">Bem-vindo, ${user.full_name}</p>
+            <p class="text-sm text-gray-600">Bem-vindo, ${user.nome}</p>
           </div>
         </div>
         
         <div class="flex items-center space-x-4">
           <div class="text-right">
-            <p class="text-sm font-semibold text-gray-700">${user.full_name}</p>
+            <p class="text-sm font-semibold text-gray-700">${user.nome}</p>
             <p class="text-xs text-gray-500">
               <i class="fas fa-id-badge mr-1"></i>${roleText[user.role]}
             </p>
@@ -285,7 +285,7 @@ function getHeaderHTML() {
   `;
 }
 
-async function showModal() {
+async function showProjectModal() {
   const today = new Date();
   const defaultDate = today.toISOString().split('T')[0];
 
@@ -338,7 +338,7 @@ async function showModal() {
         </div>
       </div>
       <div class="flex justify-end">
-        <button onclick="addEntry()" class="mt-4 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">Adicionar</button>
+        <button onclick="addProjectEntry()" class="mt-4 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">Adicionar</button>
       </div>
     </div>
   `;
