@@ -120,16 +120,6 @@ function getLoginHTML() {
             Entrar
           </button>
         </form>
-        
-        <div class="mt-6 p-4 bg-blue-50 rounded-lg">
-          <p class="text-sm text-gray-700 font-semibold mb-2">👥 Usuários de teste:</p>
-          <div class="text-xs text-gray-600 space-y-1">
-            <p><strong>Diretor:</strong> carlos.silva@empresa.com.br</p>
-            <p><strong>Gestor:</strong> ana.santos@empresa.com.br</p>
-            <p><strong>Colaborador:</strong> joao.oliveira@empresa.com.br</p>
-            <p class="mt-2"><strong>Senha:</strong> senha123 (todos)</p>
-          </div>
-        </div>
       </div>
     </div>
   `;
@@ -350,10 +340,10 @@ function getDashboardHTML() {
         <div class="mt-8 text-center text-gray-600">
           <p class="text-sm">
             <i class="fas fa-info-circle mr-1"></i>
-            Sistema de Timesheet v1.0 - MVP Completo
+            Sistema de Timesheet v1.0
           </p>
           <p class="text-xs mt-1">
-            Desenvolvido com Hono + Cloudflare Pages + D1
+            ©${new Date().getFullYear()} MyHunter. Todos os direitos reservados.
           </p>
         </div>
       </main>

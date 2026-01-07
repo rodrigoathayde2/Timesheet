@@ -25,7 +25,7 @@ async function renderTimesheetView() {
   // Calcular semana atual
   const currentWeek =  new Date(getMonday(new Date()));
   const weekStart = timesheet.weekStart ? new Date(timesheet.weekStart) : null;
-  timesheet.weekStart = weekStart ? new Date(weekStart.getTime() + (weekStart.getTimezoneOffset() * 60000)).toISOString() : new Date(currentWeek.getTime() - (currentWeek.getTimezoneOffset() * 60000)).toISOString();
+  timesheet.weekStart = weekStart ? weekStart.toISOString() : currentWeek.toISOString();
   
   appDiv.innerHTML = `
     <div class="min-h-screen bg-gray-50">
